@@ -1,3 +1,10 @@
+####
+## Forked from github.com/PGScatalog/pgsc_calc on 24/01/2026
+# Miguel Martín Álvarez, PhD
+# miguel.m.alvarez3@gmail.com
+####
+
+
 # The Polygenic Score Catalog Calculator (`pgsc_calc`)
 
 [![Documentation Status](https://readthedocs.org/projects/pgsc-calc/badge/?version=latest)](https://pgsc-calc.readthedocs.io/en/latest/?badge=latest)
