@@ -13,8 +13,6 @@ pgsc_calc/
 │   ├── retrieve_read_group_info.py     ← copy of RetrieveReadGroupInfo.py
 │   ├── expand_reference.py             ← copy of ExpandReference.py
 │   └── locate_gridss_jar.sh            ← copy of locateGridssJar.sh
-├── assets/
-│   └── contig_mappings.txt             ← copy
 ├── conf/
 │   └── bam_to_gvcf.config              ← NEW process resource config
 ├── modules/local/bam_to_gvcf/
@@ -32,11 +30,15 @@ pgsc_calc/
 │   ├── haplotypecaller.nf              ← NEW
 │   ├── gather_gvcfs.nf                 ← NEW
 │   └── generate_samplesheet.nf         ← NEW
+├── workflows/
+│   └── pgsc_calc.nf                    ← MODIFIED
 ├── subworkflows/local/
 │   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow
 ├── main.nf                             ← MODIFIED
-└── nextflow.config                     ← MODIFIED (include new config)
-
+├── nextflow.config                     ← MODIFIED (include new config)
+├── MAKE                                ← MODIFIED
+├── nextflow_schema.json                ← MODIFIED
+├── run.sh                              ← NEW run pipeline
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
