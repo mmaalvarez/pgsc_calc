@@ -145,6 +145,13 @@ include { DUMPSOFTWAREVERSIONS } from '../modules/local/dumpsoftwareversions'
 */
 
 workflow PGSCCALC {
+
+    // ---- accept the samplesheet path as input (was previously params.input) ----
+    take:
+    ch_input
+
+    main:
+
     ch_versions = Channel.empty()
 
     // some workflows require an optional input
@@ -219,7 +226,7 @@ workflow PGSCCALC {
         }
 
         INPUT_CHECK (
-            params.input,
+            ch_input,          // <--- was params.input
             params.format,
             ch_scorefiles,
             chain_files

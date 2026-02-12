@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://raw.githubusercontent.com/pgscatalog/pgsc_calc/master/nextflow_schema.json",
-  "title": "pgscatalog/pgsc_calc pipeline parameters",
+  "$id": "https://raw.githubusercontent.com/mmaalvarez/pgsc_calc/master/nextflow_schema.json",
+  "title": "mmaalvarez/pgsc_calc pipeline parameters",
   "description": "The Polygenic Score Catalog Calculator is a nextflow pipeline for polygenic score calculation",
   "type": "object",
   "definitions": {

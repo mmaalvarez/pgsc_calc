@@ -5,11 +5,11 @@ install: ## Install and check dependencies
 	@java --version
 	@docker version
 	curl -s https://get.nextflow.io | bash
-	nextflow pull pgscatalog/pgsc_calc
+	nextflow pull mmaalvarez/pgsc_calc
 	python3 -m pip install --user pytest-workflow pandas requests
 
 run: ## Run an example workflow
-	nextflow run pgscatalog/pgsc_calc -profile test,docker
+	nextflow run mmaalvarez/pgsc_calc -profile test,docker
 
 test: clean pytest ## Run pytest in a clean environment
 
