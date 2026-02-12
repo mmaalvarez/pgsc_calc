@@ -23,7 +23,9 @@ process GATHER_GVCFS {
     gatk --java-options "-Xmx!{Math.max((task.memory.toGiga() as int)-2,1)}G" GatherVcfs \
       ${input_args} \
       -O !{sampleId}.g.vcf.gz \
-      --CREATE_INDEX true \
       --REORDER_INPUT_BY_FIRST_VARIANT true
+
+    # add index
+    gatk --java-options "-Xmx!{Math.max((task.memory.toGiga() as int)-2,1)}G" IndexFeatureFile -I !{sampleId}.g.vcf.gz
     '''
 }
