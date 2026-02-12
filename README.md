@@ -1,9 +1,44 @@
-####
-## Forked from github.com/PGScatalog/pgsc_calc on 24/01/2026
-# Miguel Martín Álvarez, PhD
-# miguel.m.alvarez3@gmail.com
-####
+# Forked from github.com/PGScatalog/pgsc_calc on 24/01/2026
 
+Miguel Martín Álvarez, PhD
+
+miguel.m.alvarez3[--at--]gmail[--dot--]com
+
+
+# CHANGES
+
+pgsc_calc/
+├── bin/
+│   ├── detect_reference_genome.py      ← copy of Detect.py (add shebang + chmod +x)
+│   ├── retrieve_read_group_info.py     ← copy of RetrieveReadGroupInfo.py
+│   ├── expand_reference.py             ← copy of ExpandReference.py
+│   └── locate_gridss_jar.sh            ← copy of locateGridssJar.sh
+├── assets/
+│   └── contig_mappings.txt             ← copy
+├── conf/
+│   └── bam_to_gvcf.config              ← NEW process resource config
+├── modules/local/bam_to_gvcf/
+│   ├── link_local_bam.nf               ← NEW
+│   ├── gdc_download.nf                 ← NEW
+│   ├── ref_genome_recognition.nf       ← NEW
+│   ├── realign_bwa_mem2.nf             ← NEW
+│   ├── coordinate_sort.nf              ← NEW
+│   ├── prepare_cohort_reference.nf     ← NEW
+│   ├── filter_dbsnp.nf                 ← NEW
+│   ├── dedup_bqsr.nf                   ← NEW
+│   ├── wgs_metrics.nf                  ← NEW
+│   ├── flagstat.nf                     ← NEW
+│   ├── split_calling_regions.nf        ← NEW
+│   ├── haplotypecaller.nf              ← NEW
+│   ├── gather_gvcfs.nf                 ← NEW
+│   └── generate_samplesheet.nf         ← NEW
+├── subworkflows/local/
+│   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow
+├── main.nf                             ← MODIFIED
+└── nextflow.config                     ← MODIFIED (include new config)
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
 
 # The Polygenic Score Catalog Calculator (`pgsc_calc`)
 
