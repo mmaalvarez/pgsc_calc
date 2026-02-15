@@ -154,7 +154,7 @@ workflow BAM_TO_GVCF {
 
     // ---- Gather per-sample gVCFs across chromosomes -----------------------
     ch_grouped = HAPLOTYPECALLER.out.gvcf
-        .groupTuple(by: 0)
+        .groupTuple(by: 0, size: CHROMS.size())
         .map { sid, chrom_list, gvcf_list, tbi_list ->
             def zipped = [chrom_list.toList(), gvcf_list.toList(), tbi_list.toList()].transpose()
             zipped.sort { a, b ->
