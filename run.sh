@@ -44,9 +44,10 @@ else
     echo "ERROR: HOSTNAME is not known: '`echo $HOSTNAME | cut -d"." -f1`'"
 fi
 
+mkdir -p log/
 
 # if the input is a BAM files (paths or download IDs) table (TSV with a 'bamFile' column), run:
-nextflow run mmaalvarez/pgsc_calc \
+nextflow -log $PWD/log/nextflow.log run mmaalvarez/pgsc_calc \
     --input /path/to/BAM_paths_or_ids.tsv \
     --pgs_id PGS000740 \
     --target_build GRCh37 \
@@ -60,4 +61,4 @@ nextflow run mmaalvarez/pgsc_calc \
     -resume
 
 # if the input is already a gVCF paths table (CSV with the columns required by pgsc_calc) it only needs:
-#nextflow run mmaalvarez/pgsc_calc --input /path/to/gVCF_paths.csv --pgs_id PGS000740 --target_build GRCh37 -profile singularity -resume
+#nextflow -log $PWD/log/nextflow.log run mmaalvarez/pgsc_calc --input /path/to/gVCF_paths.csv --pgs_id PGS000740 --target_build GRCh37 -profile singularity -resume
