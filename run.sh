@@ -6,7 +6,7 @@ hostname=`echo $HOSTNAME | cut -d"." -f1 | cut -d"-" -f1`
 
 if [[ "$hostname" == "" ]]; then
 
-    ## HDP cluster
+    ## LUCIA cluster
 
 elif [[ "$hostname" == "lsflogin" || "$hostname" == "hpc" ]]; then
 
@@ -49,6 +49,7 @@ fi
 nextflow run mmaalvarez/pgsc_calc \
     --input /path/to/BAM_paths_or_ids.tsv \
     --pgs_id PGS000740 \
+    --target_build GRCh37 \
     --bam2gvcf_fasta "$ref_dir"/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
     --bam2gvcf_dict "$ref_dir"/GCA_000001405.15_GRCh38_no_alt_analysis_set.dict \
     --bam2gvcf_dbsnp "$ref_dir"/Homo_sapiens_assembly38.dbsnp138.vcf.gz \
@@ -59,4 +60,4 @@ nextflow run mmaalvarez/pgsc_calc \
     -resume
 
 # if the input is already a gVCF paths table (CSV with the columns required by pgsc_calc) it only needs:
-#nextflow run mmaalvarez/pgsc_calc --input /path/to/gVCF_paths.csv --pgs_id PGS000740 -profile singularity -resume
+#nextflow run mmaalvarez/pgsc_calc --input /path/to/gVCF_paths.csv --pgs_id PGS000740 --target_build GRCh37 -profile singularity -resume
