@@ -29,16 +29,18 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   ├── split_calling_regions.nf        ← NEW
     │   ├── haplotypecaller.nf              ← NEW
     │   ├── gather_gvcfs.nf                 ← NEW
+    │   ├── joint_genotype.nf               ← NEW
     │   └── generate_samplesheet.nf         ← NEW
     ├── workflows/
     │   └── pgsc_calc.nf                    ← MODIFIED
     ├── subworkflows/local/
-    │   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow
+    │   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow for the case when the input consists of BAM files (to be downloaded or already downloaded)
+    │   └── gvcf_to_joint.nf                ← NEW orchestrating subworkflow for the case when the input consists of single-sample gVCF files
     ├── main.nf                             ← MODIFIED
     ├── nextflow.config                     ← MODIFIED (include new config)
     ├── MAKE                                ← MODIFIED
     ├── nextflow_schema.json                ← MODIFIED
-    ├── run.sh                              ← NEW run pipeline
+    └── run.sh                              ← NEW run pipeline
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
 

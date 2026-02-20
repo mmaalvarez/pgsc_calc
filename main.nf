@@ -32,12 +32,13 @@ WorkflowMain.initialise(workflow, params, log, args)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PGSCCALC }    from './workflows/pgsc_calc'
-include { BAM_TO_GVCF } from './subworkflows/local/bam_to_gvcf'
+include { PGSCCALC }      from './workflows/pgsc_calc'
+include { BAM_TO_GVCF }   from './subworkflows/local/bam_to_gvcf'
+include { GVCF_TO_JOINT }  from './subworkflows/local/gvcf_to_joint'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    HELPER: detect BAM input from the header line
+    HELPER: detect input type from the header line
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -46,23 +47,32 @@ def isBamSampleTable(input_path) {
     return first_line.contains('bamFile')
 }
 
+def isGvcfSampleTable(input_path) {
+    def first_line = file(input_path).newReader().readLine()
+    return first_line.contains('gvcfFile')
+}
+
 //
 // WORKFLOW: Run main pgscatalog/pgsccalc analysis pipeline
 //
 workflow PGSCATALOG_PGSCCALC {
 
     if (isBamSampleTable(params.input)) {
-        // ---- BAM table mode: preprocess BAMs into gVCFs first ----
+        // ---- Mode 1: BAM table → realign/call → joint genotype → pgsc_calc ----
         log.info "Detected BAM sample table — running BAM-to-gVCF preprocessing"
 
         BAM_TO_GVCF(Channel.fromPath(params.input))
-
-        // BAM_TO_GVCF emits a pgsc_calc-compatible samplesheet;
-        // pass the path to PGSCCALC just like params.input would be passed
         PGSCCALC(BAM_TO_GVCF.out.samplesheet)
 
+    } else if (isGvcfSampleTable(params.input)) {
+        // ---- Mode 2: gVCF table → joint genotype → pgsc_calc ----
+        log.info "Detected gVCF sample table — running joint genotyping only"
+
+        GVCF_TO_JOINT(Channel.fromPath(params.input))
+        PGSCCALC(GVCF_TO_JOINT.out.samplesheet)
+
     } else {
-        // ---- Normal pgsc_calc samplesheet mode ----
+        // ---- Mode 3: Normal pgsc_calc samplesheet (VCF / pfile / bfile) ----
         PGSCCALC(params.input)
     }
 }

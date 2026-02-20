@@ -11,6 +11,7 @@ include { FLAGSTAT                } from '../../modules/local/bam_to_gvcf/flagst
 include { SPLIT_CALLING_REGIONS   } from '../../modules/local/bam_to_gvcf/split_calling_regions'
 include { HAPLOTYPECALLER         } from '../../modules/local/bam_to_gvcf/haplotypecaller'
 include { GATHER_GVCFS            } from '../../modules/local/bam_to_gvcf/gather_gvcfs'
+include { JOINT_GENOTYPE          } from '../../modules/local/bam_to_gvcf/joint_genotype'
 include { GENERATE_SAMPLESHEET    } from '../../modules/local/bam_to_gvcf/generate_samplesheet'
 
 workflow BAM_TO_GVCF {
@@ -165,15 +166,30 @@ workflow BAM_TO_GVCF {
 
     GATHER_GVCFS(ch_grouped)
 
-    // ---- Generate pgsc_calc-compatible samplesheet ------------------------
-    ch_gvcf_names = GATHER_GVCFS.out.gvcf
-        .map { sid, gvcf, tbi -> gvcf.name }
+    // ---- Joint genotype: merge all single-sample gVCFs → multi-sample VCF -
+    ch_gvcfs_for_joint = GATHER_GVCFS.out.gvcf
+        .map { sid, gvcf, tbi -> gvcf }
         .collect()
-        .map { it.sort() }
 
-    GENERATE_SAMPLESHEET(ch_gvcf_names)
+    ch_tbis_for_joint = GATHER_GVCFS.out.gvcf
+        .map { sid, gvcf, tbi -> tbi }
+        .collect()
+
+    JOINT_GENOTYPE(
+        ch_gvcfs_for_joint,
+        ch_tbis_for_joint,
+        PREPARE_COHORT_REF.out.reference,
+        FILTER_DBSNP.out.dbsnp
+    )
+
+    // ---- Generate pgsc_calc-compatible samplesheet (single row) -----------
+    ch_vcf_name = JOINT_GENOTYPE.out.vcf
+        .map { vcf, tbi -> vcf.name }
+
+    GENERATE_SAMPLESHEET(ch_vcf_name)
 
     emit:
     samplesheet = GENERATE_SAMPLESHEET.out.csv   // path to CSV
     gvcfs       = GATHER_GVCFS.out.gvcf           // tuple(sampleId, gvcf, tbi)
+    joint_vcf   = JOINT_GENOTYPE.out.vcf           // tuple(vcf, tbi)
 }

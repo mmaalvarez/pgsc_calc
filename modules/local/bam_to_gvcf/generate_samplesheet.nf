@@ -4,18 +4,18 @@ process GENERATE_SAMPLESHEET {
     publishDir "${params.outdir}/bam_to_gvcf/", mode: 'copy'
 
     input:
-    val(gvcf_names)
+    val(vcf_name)
 
     output:
     path("pgsc_calc_samplesheet.csv"), emit: csv
 
     script:
-    def publish_dir = file(params.outdir).toAbsolutePath().resolve('bam_to_gvcf/gvcfs')
-    def rows = gvcf_names.collect { name -> "cohort,${publish_dir}/${name},,," }.join('\n')
+    // point to the published location of the joint-called VCF
+    def publish_dir = file(params.outdir).toAbsolutePath().resolve('bam_to_gvcf/joint_called')
     """
     cat > pgsc_calc_samplesheet.csv <<'SAMPLESHEET'
 sampleset,vcf_path,bfile_path,pfile_path,chrom
-${rows}
+cohort,${publish_dir}/${vcf_name},,,
 SAMPLESHEET
     """
 }
