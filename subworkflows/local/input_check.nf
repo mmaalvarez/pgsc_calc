@@ -7,7 +7,7 @@ include { FORMAT_SCOREFILES } from '../../modules/local/format_scorefiles'
 
 workflow INPUT_CHECK {
     take:
-    input_path // file: /path/to/samplesheet.csv
+    input_path // file: /path/to/samplesheet.csv  — OR a channel (from BAM/gVCF preprocessing)
     format // csv or JSON
     scorefile // flat list of paths
     chain_files
@@ -27,19 +27,53 @@ workflow INPUT_CHECK {
     ch_versions = Channel.empty()
     parsed_input = Channel.empty()
 
-    input = Channel.fromPath(input_path, checkIfExists: true)
+    // ---- Normalise input: string path vs. channel from preprocessing ------
+    def is_path_string = (input_path instanceof String || input_path instanceof GString)
+
+    if (is_path_string) {
+        input = Channel.fromPath(input_path, checkIfExists: true)
+    } else {
+        // Already a channel (e.g. from BAM_TO_GVCF / GVCF_TO_JOINT)
+        input = input_path
+    }
 
     if (format.equals("csv")) {
-        def n_chrom
-        n_chrom = file(input_path).countLines() - 1 // ignore header
-        parser = new SamplesheetParser(file(input_path), n_chrom, params.target_build)
-        input.splitCsv(header:true)
-                .collect()
-                .map { rows -> parser.verifySamplesheet(rows) }
-                .flatten()
-                .map { row -> parser.parseCSVRow(row)}
+
+        if (is_path_string) {
+            // ---- Original eager logic (string path from params.input) ------
+            def n_chrom
+            n_chrom = file(input_path).countLines() - 1 // ignore header
+            parser = new SamplesheetParser(file(input_path), n_chrom, params.target_build)
+            input.splitCsv(header:true)
+                    .collect()
+                    .map { rows -> parser.verifySamplesheet(rows) }
+                    .flatten()
+                    .map { row -> parser.parseCSVRow(row)}
+                    .set { parsed_input }
+
+        } else {
+            // ---- Reactive logic (channel from BAM/gVCF preprocessing) ------
+            //  Cannot call file() or countLines() eagerly on a channel, so
+            //  parse everything inside .map where the concrete Path is available.
+            input
+                .map { f ->
+                    def lines   = f.readLines()
+                    def n_chrom = lines.size() - 1          // ignore header
+                    def parser  = new SamplesheetParser(f, n_chrom, params.target_build)
+                    def header  = lines[0].split(',')*.trim()
+                    def rows    = lines.drop(1).collect { line ->
+                        def vals = line.split(',', -1)*.trim()
+                        [header, vals].transpose().collectEntries()
+                    }
+                    parser.verifySamplesheet(rows)
+                    rows.collect { row -> parser.parseCSVRow(row) }
+                }
+                .flatMap { it }
                 .set { parsed_input }
+        }
+
     } else if (format.equals("json")) {
+        // JSON is only used in normal (string-path) mode
         def n_chrom
         n_chrom = file(input_path).countJson()
         parser = new SamplesheetParser(file(input_path), n_chrom, params.target_build)
@@ -94,4 +128,3 @@ workflow INPUT_CHECK {
     log_scorefiles
     versions
 }
-

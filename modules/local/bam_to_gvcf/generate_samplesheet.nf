@@ -4,18 +4,36 @@ process GENERATE_SAMPLESHEET {
     publishDir "${params.outdir}/bam_to_gvcf/", mode: 'copy'
 
     input:
-    val(vcf_name)
+    tuple path(vcf_file), path(vcf_tbi)
 
     output:
     path("pgsc_calc_samplesheet.csv"), emit: csv
 
-    script:
-    // point to the published location of the joint-called VCF
-    def publish_dir = file(params.outdir).toAbsolutePath().resolve('bam_to_gvcf/joint_called')
-    """
-    cat > pgsc_calc_samplesheet.csv <<'SAMPLESHEET'
-sampleset,vcf_path,bfile_path,pfile_path,chrom
-cohort,${publish_dir}/${vcf_name},,,
+    shell:
+    '''
+    set -euo pipefail
+
+    # Resolve the staged symlink to the real VCF path in the work directory
+    real_vcf=$(readlink -f !{vcf_file})
+
+    # SamplesheetParser.getFilePaths() appends .vcf / .vcf.gz / .vcf.zst,
+    # so path_prefix must be the path WITHOUT the file extension
+    prefix="$real_vcf"
+    if [[ "$real_vcf" == *.g.vcf.gz ]]; then
+        prefix="${real_vcf%.g.vcf.gz}"
+    elif [[ "$real_vcf" == *.g.vcf.zst ]]; then
+        prefix="${real_vcf%.g.vcf.zst}"
+    elif [[ "$real_vcf" == *.vcf.gz ]]; then
+        prefix="${real_vcf%.vcf.gz}"
+    elif [[ "$real_vcf" == *.vcf.zst ]]; then
+        prefix="${real_vcf%.vcf.zst}"
+    elif [[ "$real_vcf" == *.vcf ]]; then
+        prefix="${real_vcf%.vcf}"
+    fi
+
+    cat > pgsc_calc_samplesheet.csv <<SAMPLESHEET
+sampleset,path_prefix,chrom,format
+cohort,${prefix},,vcf
 SAMPLESHEET
-    """
+    '''
 }
