@@ -183,10 +183,8 @@ workflow BAM_TO_GVCF {
     )
 
     // ---- Generate pgsc_calc-compatible samplesheet (single row) -----------
-    ch_vcf_name = JOINT_GENOTYPE.out.vcf
-        .map { vcf, tbi -> vcf.name }
-
-    GENERATE_SAMPLESHEET(ch_vcf_name)
+    // Pass the VCF tuple directly — GENERATE_SAMPLESHEET resolves the real path
+    GENERATE_SAMPLESHEET(JOINT_GENOTYPE.out.vcf)
 
     emit:
     samplesheet = GENERATE_SAMPLESHEET.out.csv   // path to CSV

@@ -8,6 +8,7 @@ nextflow -log $PWD/log/nextflow.log run mmaalvarez/pgsc_calc \
     --pgs_id PGS000740 \
     --target_build GRCh37 \
     -profile singularity \
+    -latest \
     -resume #\
 
 ## if the input is a single-sample-gVCF paths table (TSV containing a column with the 'gvcfFile' header), add:
