@@ -53,6 +53,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
         --pgs_id PGS[......] \
         --target_build GRCh[37,38] \
         -profile singularity[,slurm] \
+        --singularity_bind_paths '/path/to/bind,/other/path/to/bind' \
         -latest \
         -resume #\
 
