@@ -8,9 +8,14 @@ workflow GVCF_TO_JOINT {
 
     main:
 
+    // ---- Constants --------------------------------------------------------
+    def CHROMS = [
+        'chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10',
+        'chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20',
+        'chr21','chr22','chrX','chrY'
+    ]
+
     // ---- Reference files from params --------------------------------------
-    //  Only the FASTA (+.fai), dict, and dbSNP (+.tbi) are needed;
-    //  BWA indices, calling regions, etc. are NOT required for this path.
     ch_ref_tuple = Channel.value([
         file(params.bam2gvcf_fasta,              checkIfExists: true),
         file("${params.bam2gvcf_fasta}.fai",     checkIfExists: true),
@@ -35,22 +40,34 @@ workflow GVCF_TO_JOINT {
             tuple(gvcf, tbi)
         }
 
-    ch_gvcf_files = ch_gvcf_pairs.map { gvcf, tbi -> gvcf }.collect()
-    ch_tbi_files  = ch_gvcf_pairs.map { gvcf, tbi -> tbi  }.collect()
+    // Collect all whole-genome gVCFs and TBIs, wrapping each collected list
+    // inside another list so that combine preserves them as nested lists
+    // (rather than flattening into the outer tuple).
+    ch_gvcf_files = ch_gvcf_pairs.map { gvcf, tbi -> gvcf }.collect().map { [it] }
+    ch_tbi_files  = ch_gvcf_pairs.map { gvcf, tbi -> tbi  }.collect().map { [it] }
 
-    // ---- Joint genotype: CombineGVCFs + GenotypeGVCFs ---------------------
-    JOINT_GENOTYPE(
-        ch_gvcf_files,
-        ch_tbi_files,
-        ch_ref_tuple,
-        ch_dbsnp_tuple
-    )
+    // ---- Per-chromosome joint genotyping ----------------------------------
+    //  Every chromosome gets ALL samples' gVCFs; the -L flag inside
+    //  JOINT_GENOTYPE restricts CombineGVCFs + GenotypeGVCFs to that chrom.
+    Channel.of(*CHROMS)
+        .combine(ch_gvcf_files)
+        .combine(ch_tbi_files)
+        .combine(ch_ref_tuple)
+        .combine(ch_dbsnp_tuple)
+        .set { ch_jg_input }
+    // ch_jg_input: [chrom, [gvcfs], [tbis], ref, fai, dict, dbsnp, dbsnp_tbi]
 
-    // ---- Generate pgsc_calc-compatible samplesheet (single row) -----------
-    // Pass the VCF tuple directly — GENERATE_SAMPLESHEET resolves the real path
-    GENERATE_SAMPLESHEET(JOINT_GENOTYPE.out.vcf)
+    JOINT_GENOTYPE(ch_jg_input)
+
+    // ---- Generate pgsc_calc samplesheet (one row per chromosome) ----------
+    JOINT_GENOTYPE.out.vcf
+        .map { chrom, vcf, tbi -> vcf }
+        .collect()
+        .set { ch_all_vcfs }
+
+    GENERATE_SAMPLESHEET(ch_all_vcfs)
 
     emit:
-    samplesheet = GENERATE_SAMPLESHEET.out.csv   // path to CSV
-    joint_vcf   = JOINT_GENOTYPE.out.vcf          // tuple(vcf, tbi)
+    samplesheet = GENERATE_SAMPLESHEET.out.csv   // path to multi-row CSV
+    joint_vcfs  = JOINT_GENOTYPE.out.vcf          // tuple(chrom, vcf, tbi) per chromosome
 }
