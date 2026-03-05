@@ -14,6 +14,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   ├── expand_reference.py             ← copy of ExpandReference.py
     │   └── locate_gridss_jar.sh            ← copy of locateGridssJar.sh
     ├── conf/
+    │   ├── modules.config 	            ← MODIFIED
     │   └── bam_to_gvcf.config              ← NEW process resource config
     ├── modules/local/bam_to_gvcf/
     │   ├── link_local_bam.nf               ← NEW
