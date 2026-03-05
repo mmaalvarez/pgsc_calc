@@ -10,7 +10,6 @@ include { WGS_METRICS             } from '../../modules/local/bam_to_gvcf/wgs_me
 include { FLAGSTAT                } from '../../modules/local/bam_to_gvcf/flagstat'
 include { SPLIT_CALLING_REGIONS   } from '../../modules/local/bam_to_gvcf/split_calling_regions'
 include { HAPLOTYPECALLER         } from '../../modules/local/bam_to_gvcf/haplotypecaller'
-include { GATHER_GVCFS            } from '../../modules/local/bam_to_gvcf/gather_gvcfs'
 include { JOINT_GENOTYPE          } from '../../modules/local/bam_to_gvcf/joint_genotype'
 include { GENERATE_SAMPLESHEET    } from '../../modules/local/bam_to_gvcf/generate_samplesheet'
 
@@ -27,7 +26,6 @@ workflow BAM_TO_GVCF {
         'chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20',
         'chr21','chr22','chrX','chrY'
     ]
-    def chromOrder = CHROMS.withIndex().collectEntries { c, i -> [(c): i] }
 
     // ---- Reference files from params --------------------------------------
     ch_ref_fasta   = Channel.value(file(params.bam2gvcf_fasta, checkIfExists: true))
@@ -138,7 +136,7 @@ workflow BAM_TO_GVCF {
         .filter { chr, bed -> bed.size() > 0 }
         .ifEmpty { error "No valid calling regions for any chromosome" }
 
-    // ---- HaplotypeCaller per chromosome -----------------------------------
+    // ---- HaplotypeCaller per sample × chromosome --------------------------
     ch_hc_base = DEDUP_BQSR.out.bam
         .combine(PREPARE_COHORT_REF.out.reference)
         .combine(FILTER_DBSNP.out.dbsnp)
@@ -153,41 +151,36 @@ workflow BAM_TO_GVCF {
 
     HAPLOTYPECALLER(ch_hc_jobs)
 
-    // ---- Gather per-sample gVCFs across chromosomes -----------------------
-    ch_grouped = HAPLOTYPECALLER.out.gvcf
-        .groupTuple(by: 0, size: CHROMS.size())
-        .map { sid, chrom_list, gvcf_list, tbi_list ->
-            def zipped = [chrom_list.toList(), gvcf_list.toList(), tbi_list.toList()].transpose()
-            zipped.sort { a, b ->
-                (chromOrder[a[0].toString()] ?: 9999) <=> (chromOrder[b[0].toString()] ?: 9999)
-            }
-            tuple(sid, zipped.collect{it[0]}, zipped.collect{it[1]}, zipped.collect{it[2]})
+    // ---- Group HaplotypeCaller output BY CHROMOSOME (across all samples) --
+    //  Previously we grouped by sample (GATHER_GVCFS) then joint-called once.
+    //  Now we group by chromosome so that each JOINT_GENOTYPE merges all
+    //  samples for a single chromosome, producing one multi-sample VCF per chrom.
+    HAPLOTYPECALLER.out.gvcf
+        .map { sid, chrom, gvcf, tbi -> tuple(chrom, gvcf, tbi) }
+        .groupTuple(by: 0)
+        .set { ch_per_chrom }
+    // ch_per_chrom: [chrom, [gvcf_sample1, gvcf_sample2, ...], [tbi_sample1, tbi_sample2, ...]]
+
+    // ---- Per-chromosome joint genotyping ----------------------------------
+    ch_per_chrom
+        .combine(PREPARE_COHORT_REF.out.reference)
+        .combine(FILTER_DBSNP.out.dbsnp)
+        .map { chrom, gvcfs, tbis, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi ->
+            tuple(chrom, gvcfs, tbis, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi)
         }
+        .set { ch_jg_input }
 
-    GATHER_GVCFS(ch_grouped)
+    JOINT_GENOTYPE(ch_jg_input)
 
-    // ---- Joint genotype: merge all single-sample gVCFs → multi-sample VCF -
-    ch_gvcfs_for_joint = GATHER_GVCFS.out.gvcf
-        .map { sid, gvcf, tbi -> gvcf }
+    // ---- Generate pgsc_calc samplesheet (one row per chromosome) ----------
+    JOINT_GENOTYPE.out.vcf
+        .map { chrom, vcf, tbi -> vcf }
         .collect()
+        .set { ch_all_vcfs }
 
-    ch_tbis_for_joint = GATHER_GVCFS.out.gvcf
-        .map { sid, gvcf, tbi -> tbi }
-        .collect()
-
-    JOINT_GENOTYPE(
-        ch_gvcfs_for_joint,
-        ch_tbis_for_joint,
-        PREPARE_COHORT_REF.out.reference,
-        FILTER_DBSNP.out.dbsnp
-    )
-
-    // ---- Generate pgsc_calc-compatible samplesheet (single row) -----------
-    // Pass the VCF tuple directly — GENERATE_SAMPLESHEET resolves the real path
-    GENERATE_SAMPLESHEET(JOINT_GENOTYPE.out.vcf)
+    GENERATE_SAMPLESHEET(ch_all_vcfs)
 
     emit:
-    samplesheet = GENERATE_SAMPLESHEET.out.csv   // path to CSV
-    gvcfs       = GATHER_GVCFS.out.gvcf           // tuple(sampleId, gvcf, tbi)
-    joint_vcf   = JOINT_GENOTYPE.out.vcf           // tuple(vcf, tbi)
+    samplesheet = GENERATE_SAMPLESHEET.out.csv   // path to multi-row CSV
+    joint_vcfs  = JOINT_GENOTYPE.out.vcf          // tuple(chrom, vcf, tbi) per chromosome
 }

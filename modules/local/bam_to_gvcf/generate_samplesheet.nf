@@ -4,7 +4,7 @@ process GENERATE_SAMPLESHEET {
     publishDir "${params.outdir}/bam_to_gvcf/", mode: 'copy'
 
     input:
-    tuple path(vcf_file), path(vcf_tbi)
+    path(vcf_files)
 
     output:
     path("pgsc_calc_samplesheet.csv"), emit: csv
@@ -13,27 +13,27 @@ process GENERATE_SAMPLESHEET {
     '''
     set -euo pipefail
 
-    # Resolve the staged symlink to the real VCF path in the work directory
-    real_vcf=$(readlink -f !{vcf_file})
+    echo "sampleset,path_prefix,chrom,format" > pgsc_calc_samplesheet.csv
 
-    # SamplesheetParser.getFilePaths() appends .vcf / .vcf.gz / .vcf.zst,
-    # so path_prefix must be the path WITHOUT the file extension
-    prefix="$real_vcf"
-    if [[ "$real_vcf" == *.g.vcf.gz ]]; then
-        prefix="${real_vcf%.g.vcf.gz}"
-    elif [[ "$real_vcf" == *.g.vcf.zst ]]; then
-        prefix="${real_vcf%.g.vcf.zst}"
-    elif [[ "$real_vcf" == *.vcf.gz ]]; then
+    for vcf in cohort_*.vcf.gz; do
+        [ -f "$vcf" ] || continue
+
+        real_vcf=$(readlink -f "$vcf")
+
+        # Extract chromosome from filename: cohort_chr1.vcf.gz -> chr1
+        chrom=$(basename "$vcf" .vcf.gz | sed 's/^cohort_//')
+
+        # Strip .vcf.gz to get path_prefix (SamplesheetParser re-appends the extension)
         prefix="${real_vcf%.vcf.gz}"
-    elif [[ "$real_vcf" == *.vcf.zst ]]; then
-        prefix="${real_vcf%.vcf.zst}"
-    elif [[ "$real_vcf" == *.vcf ]]; then
-        prefix="${real_vcf%.vcf}"
-    fi
 
-    cat > pgsc_calc_samplesheet.csv <<SAMPLESHEET
-sampleset,path_prefix,chrom,format
-cohort,${prefix},,vcf
-SAMPLESHEET
+        echo "cohort,${prefix},${chrom},vcf" >> pgsc_calc_samplesheet.csv
+    done
+
+    # Sort rows by chromosome (natural/version sort) for reproducibility
+    {
+        head -1 pgsc_calc_samplesheet.csv
+        tail -n +2 pgsc_calc_samplesheet.csv | sort -t',' -k3 -V
+    } > tmp_sorted.csv
+    mv tmp_sorted.csv pgsc_calc_samplesheet.csv
     '''
 }

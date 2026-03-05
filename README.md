@@ -14,6 +14,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   ├── expand_reference.py             ← copy of ExpandReference.py
     │   └── locate_gridss_jar.sh            ← copy of locateGridssJar.sh
     ├── conf/
+    │   ├── modules.config 	            ← MODIFIED
     │   └── bam_to_gvcf.config              ← NEW process resource config
     ├── modules/local/bam_to_gvcf/
     │   ├── link_local_bam.nf               ← NEW
@@ -28,7 +29,6 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   ├── flagstat.nf                     ← NEW
     │   ├── split_calling_regions.nf        ← NEW
     │   ├── haplotypecaller.nf              ← NEW
-    │   ├── gather_gvcfs.nf                 ← NEW
     │   ├── joint_genotype.nf               ← NEW
     │   └── generate_samplesheet.nf         ← NEW
     ├── workflows/
@@ -50,7 +50,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
 
     nextflow run mmaalvarez/pgsc_calc \
         --input /path/to/input_table.csv \
-        --pgs_id PGS[......] \
+        --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
         --target_build GRCh[37,38] \
         -profile singularity[,slurm] \
         --singularity_bind_paths '/path/to/bind,/other/path/to/bind' \
