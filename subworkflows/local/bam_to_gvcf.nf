@@ -102,7 +102,10 @@ workflow BAM_TO_GVCF {
     COORDINATE_SORT(ch_post_align)
 
     // ---- Cohort reference from first BAM ----------------------------------
-    ch_first_bam = COORDINATE_SORT.out.bam.first()
+    ch_first_bam = COORDINATE_SORT.out.bam
+        .toSortedList { a, b -> a[0] <=> b[0] }  // sort by sampleId
+        .map { it.first() }                      // always picks alphabetically first sample    
+
     PREPARE_COHORT_REF(ch_first_bam, ch_ref_fasta, ch_contig_map)
 
     // ---- Filter dbSNP for cohort ------------------------------------------
