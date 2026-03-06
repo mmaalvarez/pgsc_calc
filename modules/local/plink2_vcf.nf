@@ -34,7 +34,7 @@ process PLINK2_VCF {
     def dosage_options = meta.vcf_import_dosage ? 'dosage=DS' : ''
     // rewriting genotypes, so use --max-alleles instead of using generic ID
     def set_ma_missing = params.keep_multiallelic ? '' : '--max-alleles 2'
-    def chrom_filter = meta.chrom == "ALL" ? "--chr 1-22, X, Y, XY" : "--chr ${meta.chrom}" // filter to canonical/stated chromosome
+    def chrom_filter = meta.chrom == "ALL" ? "--chr 1-22" : "--chr ${meta.chrom}" // filter to canonical/stated AUTOSOMAL chromosomes
     newmeta = meta.clone() // copy hashmap for updating...
     newmeta.is_pfile = true // now it's converted to a pfile :)
     // def limits scope to process block, so don't use it

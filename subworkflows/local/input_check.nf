@@ -85,10 +85,14 @@ workflow INPUT_CHECK {
             .set { parsed_input }
     }
 
-    parsed_input.branch {
-                vcf: it[0].is_vcf
-                bfile: it[0].is_bfile
-                pfile: it[0].is_pfile
+    // only AUTOSOMES
+    def AUTOSOMAL_CHROMS = ((1..22).collect { it.toString() } + ['ALL']) as Set
+    parsed_input
+        .filter { it[0].chrom in AUTOSOMAL_CHROMS }
+        .branch {
+            vcf: it[0].is_vcf
+            bfile: it[0].is_bfile
+            pfile: it[0].is_pfile
         }
         .set { ch_branched }
 

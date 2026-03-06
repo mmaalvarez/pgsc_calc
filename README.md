@@ -14,27 +14,31 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   ├── expand_reference.py             ← copy of ExpandReference.py
     │   └── locate_gridss_jar.sh            ← copy of locateGridssJar.sh
     ├── conf/
-    │   ├── modules.config 	            ← MODIFIED
+    │   ├── modules.config                  ← MODIFIED
     │   └── bam_to_gvcf.config              ← NEW process resource config
-    ├── modules/local/bam_to_gvcf/
-    │   ├── link_local_bam.nf               ← NEW
-    │   ├── gdc_download.nf                 ← NEW
-    │   ├── ref_genome_recognition.nf       ← NEW
-    │   ├── realign_bwa_mem2.nf             ← NEW
-    │   ├── coordinate_sort.nf              ← NEW
-    │   ├── prepare_cohort_reference.nf     ← NEW
-    │   ├── filter_dbsnp.nf                 ← NEW
-    │   ├── dedup_bqsr.nf                   ← NEW
-    │   ├── wgs_metrics.nf                  ← NEW
-    │   ├── flagstat.nf                     ← NEW
-    │   ├── split_calling_regions.nf        ← NEW
-    │   ├── haplotypecaller.nf              ← NEW
-    │   ├── joint_genotype.nf               ← NEW
-    │   └── generate_samplesheet.nf         ← NEW
+    ├── modules/local/
+    │   ├── plink2_vcf.nf                   ← MODIFIED to accept only autosomes
+    │   ├── plink2_relabelbim.nf            ← MODIFIED to accept only autosomes
+    │   ├── plink2_relabelpvar.nf           ← MODIFIED to accept only autosomes
+    │   └── bam_to_gvcf/                    ← NEW
+    │       ├── link_local_bam.nf           ← NEW
+    │       ├── gdc_download.nf             ← NEW
+    │       ├── ref_genome_recognition.nf   ← NEW
+    │       ├── realign_bwa_mem2.nf         ← NEW
+    │       ├── coordinate_sort.nf          ← NEW
+    │       ├── prepare_cohort_reference.nf ← NEW
+    │       ├── filter_dbsnp.nf             ← NEW
+    │       ├── dedup_bqsr.nf               ← NEW
+    │       ├── wgs_metrics.nf              ← NEW
+    │       ├── flagstat.nf                 ← NEW
+    │       ├── split_calling_regions.nf    ← NEW
+    │       ├── haplotypecaller.nf          ← NEW
+    │       ├── joint_genotype.nf           ← NEW
+    │       └── generate_samplesheet.nf     ← NEW
     ├── workflows/
     │   └── pgsc_calc.nf                    ← MODIFIED
     ├── subworkflows/local/
-    │   └── input_check.nf                  ← MODIFIED    
+    │   └── input_check.nf                  ← MODIFIED (accept only autosomes, also the integration of bam_to_gvcf)    
     │   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow for the case when the input consists of BAM files (to be downloaded or already downloaded)
     │   └── gvcf_to_joint.nf                ← NEW orchestrating subworkflow for the case when the input consists of single-sample gVCF files
     ├── main.nf                             ← MODIFIED
