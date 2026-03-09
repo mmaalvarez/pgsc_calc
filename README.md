@@ -52,15 +52,12 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
 
 - If the input is already a multisample-VCF path table (CSV with the columns required by pgsc_calc) it only needs:
 
-    nextflow run mmaalvarez/pgsc_calc \
-	-r main \
-        --input /path/to/input_table.csv \
-        --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
-        --target_build GRCh[37,38] \
+    nextflow run mmaalvarez/pgsc_calc -r main -latest -resume \
         -profile singularity[,slurm] \
         --singularity_bind_paths '/path/to/bind,/other/path/to/bind' \
-        -latest \
-        -resume #\
+        --input /path/to/input_table.csv \
+        --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
+        --target_build GRCh[37,38] #\
 
 - If the input is a single-sample-gVCF paths table (TSV containing a column with the 'gvcfFile' header), add (assuming GRCh38 here):
 
