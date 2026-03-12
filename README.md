@@ -57,7 +57,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
         --singularity_bind_paths '/path/to/bind,/other/path/to/bind' \
         --input /path/to/input_table.csv \
         --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
-        --target_build GRCh38 #\
+        --target_build GRCh[37,38] #\
 
 - If the input is a single-sample-gVCF paths table (TSV containing a column with the 'gvcfFile' header), add (assuming GRCh38 here):
 
@@ -65,7 +65,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
         --bam2gvcf_dict /path/to/refDir/GCA_000001405.15_GRCh38_no_alt_analysis_set.dict \
         --bam2gvcf_dbsnp /path/to/refDir/Homo_sapiens_assembly38.dbsnp138.vcf.gz #\
 
-- and if the input is a BAM files (paths or download IDs) table (TSV containing a column with the 'bamFile' header), add also:
+- and if the input is a BAM files (paths or download IDs) table (TSV containing a column with the 'bamFile' header), add also (assuming GRCh38 here):
 
         --bam2gvcf_calling_regions /path/to/refDir/GRCh38.d1.vd1.fa.bed.gz \
         --bam2gvcf_contig_map /path/to/refDir/contig_mappings.txt \
