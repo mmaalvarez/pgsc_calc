@@ -1,6 +1,6 @@
 process PLINK2_VCF {
     // labels are defined in conf/modules.config
-    label 'process_vhigh'
+    label 'process_high'
     label "${ params.copy_genomes ? 'copy_genomes' : '' }"
     label "plink2" // controls conda, docker, + singularity options
 
