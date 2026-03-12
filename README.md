@@ -57,7 +57,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
         --singularity_bind_paths '/path/to/bind,/other/path/to/bind' \
         --input /path/to/input_table.csv \
         --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
-        --target_build GRCh[37,38] #\
+        --target_build GRCh38 #\
 
 - If the input is a single-sample-gVCF paths table (TSV containing a column with the 'gvcfFile' header), add (assuming GRCh38 here):
 
