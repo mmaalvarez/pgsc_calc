@@ -22,6 +22,6 @@ process PREPARE_COHORT_REF {
         -o cohort_reference.fa
 
     samtools faidx cohort_reference.fa
-    gatk CreateSequenceDictionary -R cohort_reference.fa -O cohort_reference.dict
+    gatk --java-options "-Xmx3500m" CreateSequenceDictionary -R cohort_reference.fa -O cohort_reference.dict
     '''
 }
