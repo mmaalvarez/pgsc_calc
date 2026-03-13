@@ -244,9 +244,7 @@ requiredSequences = [
     'chr19',
     'chr20',
     'chr21',
-    'chr22',
-    'chrX',
-    'chrY'
+    'chr22'
 ]
 
 
@@ -331,7 +329,7 @@ def compareSequencesDict(dict1: dict, dict2: dict, requiredSequences):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="idenitfy reference genome used for aligning")
+    ap = argparse.ArgumentParser(description="identify reference genome used for aligning")
 
     ap.add_argument("-b", "--bamFile", required=True)
     ap.add_argument("-d", "--dictFile", required=True)
