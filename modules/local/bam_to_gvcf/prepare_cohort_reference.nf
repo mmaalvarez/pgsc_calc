@@ -1,6 +1,9 @@
 process PREPARE_COHORT_REF {
     tag "cohort-reference"
 
+    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    storeDir cachedir / "bam_to_gvcf" / "cohort_ref"
+    
     input:
     tuple val(sampleId), path(one_bam), path(one_bai)
     path(base_reference)

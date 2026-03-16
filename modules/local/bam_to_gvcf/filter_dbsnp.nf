@@ -1,6 +1,9 @@
 process FILTER_DBSNP {
     tag "filter-dbsnp"
 
+    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    storeDir cachedir / "bam_to_gvcf" / "filtered_dbsnp"
+
     input:
     tuple path(cohort_ref), path(cohort_fai), path(cohort_dict)
     path(original_dbsnp)
