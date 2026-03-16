@@ -96,7 +96,8 @@ process JOINT_GENOTYPE {
                         break
                     }
                 }
-                if (db_alt != "" && db_alt != ".") {
+                # && db_alt != $4 guard drops any site where the dbSNP ALT is identical to the REF — these are biologically meaningless entries in dbSNP
+                if (db_alt != "" && db_alt != "." && db_alt != $4) {
                     $5 = db_alt
                     print
                 }
