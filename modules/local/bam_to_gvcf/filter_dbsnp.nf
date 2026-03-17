@@ -30,5 +30,7 @@ process FILTER_DBSNP {
 
     tabix -p vcf dbsnp138_cohort_compatible.vcf.gz
     rm -f temp_filtered.vcf.gz
+
+    sync # ← flush NFS buffers before Nextflow collects outputs
     '''
 }
