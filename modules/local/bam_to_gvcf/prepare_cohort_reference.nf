@@ -26,5 +26,7 @@ process PREPARE_COHORT_REF {
 
     samtools faidx cohort_reference.fa
     gatk --java-options "-Xmx3500m" CreateSequenceDictionary -R cohort_reference.fa -O cohort_reference.dict
+
+    sync # ← flush NFS buffers before Nextflow collects outputs
     '''
 }
