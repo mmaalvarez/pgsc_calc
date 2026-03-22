@@ -70,7 +70,9 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
 - and if the input is a BAM files (paths or download IDs) table (TSV containing a column with the 'bamFile' header), add also (assuming GRCh38 here):
 
         --bam2gvcf_calling_regions /path/to/refDir/GRCh"$GRCh".d1.vd1.fa.bed.gz \
-        --bam2gvcf_contig_map /path/to/refDir/contig_mappings.txt \
+        --bam2gvcf_contig_map /path/to/refDir/contig_mappings.txt #\
+
+- also, if the BAM files are downloaded from GDC, to use the token:
         --gdc_token /path/to/refDir/gdc_token.txt
 
 
