@@ -1,5 +1,6 @@
 include { LINK_LOCAL_BAM          } from '../../modules/local/bam_to_gvcf/link_local_bam'
 include { GDC_DOWNLOAD            } from '../../modules/local/bam_to_gvcf/gdc_download'
+include { URL_DOWNLOAD            } from '../../modules/local/bam_to_gvcf/url_download'          // *** NEW ***
 include { REF_GENOME_RECOGNITION  } from '../../modules/local/bam_to_gvcf/ref_genome_recognition'
 include { REALIGN_BWA_MEM2        } from '../../modules/local/bam_to_gvcf/realign_bwa_mem2'
 include { COORDINATE_SORT         } from '../../modules/local/bam_to_gvcf/coordinate_sort'
@@ -53,13 +54,17 @@ workflow BAM_TO_GVCF {
             row.bamFile as String
         }
 
-    // ---- Branch: local BAM path vs remote GDC ID --------------------------
+    // ---- Branch: URL vs local BAM path vs remote GDC ID -------------------  // *** CHANGED ***
+    //  Check for URLs first so that file(it).exists() is never called on an
+    //  HTTP/FTP address (Nextflow's file() *can* resolve remote URIs, which
+    //  would short-circuit into the local branch).
     ch_all_ids.branch {
+        url:    it.startsWith('http://') || it.startsWith('https://') || it.startsWith('ftp://')   // *** NEW ***
         local:  file(it).exists()
-        remote: true
+        remote: true                                                                                // GDC UUIDs
     }.set { sample_branch }
 
-    // Local BAMs — resolve BAI companion
+    // -- Local BAMs — resolve BAI companion ---------------------------------
     ch_local_input = sample_branch.local.map { bam_path ->
         def bam = file(bam_path)
         def sampleId = bam.baseName
@@ -73,10 +78,23 @@ workflow BAM_TO_GVCF {
     }
 
     LINK_LOCAL_BAM(ch_local_input)
+
+    // -- URL BAMs — derive sampleId from the filename in the URL ------------  // *** NEW ***
+    ch_url_input = sample_branch.url.map { bam_url ->
+        def filename = bam_url.tokenize('/').last()                  // e.g. HG00096.mapped.ILLUMINA.bwa.GBR.low_coverage.20120522.bam
+        def sampleId = filename.replaceAll(/\.bam$/, '')
+        tuple(sampleId, bam_url)
+    }
+
+    URL_DOWNLOAD(ch_url_input)                                                                      // *** NEW ***
+
+    // -- GDC BAMs -----------------------------------------------------------
     GDC_DOWNLOAD(sample_branch.remote)
 
-    // ---- Unify both sources -----------------------------------------------
-    ch_downloaded = LINK_LOCAL_BAM.out.bam.mix(GDC_DOWNLOAD.out.bam)
+    // ---- Unify all three sources ------------------------------------------  // *** CHANGED ***
+    ch_downloaded = LINK_LOCAL_BAM.out.bam
+        .mix(URL_DOWNLOAD.out.bam)                                                                  // *** NEW ***
+        .mix(GDC_DOWNLOAD.out.bam)
 
     // ---- Reference genome recognition -------------------------------------
     REF_GENOME_RECOGNITION(ch_downloaded, ch_ref_dict)
@@ -104,7 +122,7 @@ workflow BAM_TO_GVCF {
     // ---- Cohort reference from first BAM ----------------------------------
     ch_first_bam = COORDINATE_SORT.out.bam
         .toSortedList { a, b -> a[0] <=> b[0] }  // sort by sampleId
-        .map { it.first() }                      // always picks alphabetically first sample    
+        .map { it.first() }                      // always picks alphabetically first sample
 
     PREPARE_COHORT_REF(ch_first_bam, ch_ref_fasta, ch_contig_map)
 
@@ -156,14 +174,10 @@ workflow BAM_TO_GVCF {
     HAPLOTYPECALLER(ch_hc_jobs)
 
     // ---- Group HaplotypeCaller output BY CHROMOSOME (across all samples) --
-    //  Previously we grouped by sample (GATHER_GVCFS) then joint-called once.
-    //  Now we group by chromosome so that each JOINT_GENOTYPE merges all
-    //  samples for a single chromosome, producing one multi-sample VCF per chrom.
     HAPLOTYPECALLER.out.gvcf
         .map { sid, chrom, gvcf, tbi -> tuple(chrom, gvcf, tbi) }
         .groupTuple(by: 0)
         .set { ch_per_chrom }
-    // ch_per_chrom: [chrom, [gvcf_sample1, gvcf_sample2, ...], [tbi_sample1, tbi_sample2, ...]]
 
     // ---- Per-chromosome joint genotyping ----------------------------------
     ch_per_chrom
@@ -185,6 +199,6 @@ workflow BAM_TO_GVCF {
     GENERATE_SAMPLESHEET(ch_all_vcfs)
 
     emit:
-    samplesheet = GENERATE_SAMPLESHEET.out.csv   // path to multi-row CSV
-    joint_vcfs  = JOINT_GENOTYPE.out.vcf          // tuple(chrom, vcf, tbi) per chromosome
+    samplesheet = GENERATE_SAMPLESHEET.out.csv
+    joint_vcfs  = JOINT_GENOTYPE.out.vcf
 }

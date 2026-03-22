@@ -50,8 +50,9 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
 
 # USAGE
 
-- If the input is already a multisample-VCF path table (CSV with the columns required by pgsc_calc) it only needs:
-	
+- If the input is already the path to a [single,multi]chromosome-multisample-VCF files table (a CSV with the columns required by pgsc_calc, and no ".vcf[.gz]" in the filename column) it only needs:
+	WARNING: the VCFs must have undergone joint genotyping, therefore being "gVCF-like", i.e. containing non-variant loci, but with finalized, genotyped variant calls with proper GT fields and no <NON_REF> alleles
+
     GRCh=38
     nextflow run mmaalvarez/pgsc_calc -r main -latest -resume \
         -profile singularity[,slurm] \
@@ -60,7 +61,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
         --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
         --target_build GRCh"$GRCh" #\
 
-- If the input is a single-sample-gVCF paths table (TSV containing a column with the 'gvcfFile' header), add these flags
+- If the input is the path to a multichromosome-singlesample-gVCF files table (TSV containing a column with the 'gvcfFile' header), add these flags
 	WARNING: the --target_build must match the build in these reference files, e.g. here I am using GRCh38:
 
         --bam2gvcf_fasta /path/to/refDir/GCA_000001405.15_GRCh"$GRCh"_no_alt_analysis_set.fna \
@@ -70,7 +71,9 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
 - and if the input is a BAM files (paths or download IDs) table (TSV containing a column with the 'bamFile' header), add also (assuming GRCh38 here):
 
         --bam2gvcf_calling_regions /path/to/refDir/GRCh"$GRCh".d1.vd1.fa.bed.gz \
-        --bam2gvcf_contig_map /path/to/refDir/contig_mappings.txt \
+        --bam2gvcf_contig_map /path/to/refDir/contig_mappings.txt #\
+
+- also, if the BAM files are downloaded from GDC, to use the token:
         --gdc_token /path/to/refDir/gdc_token.txt
 
 
