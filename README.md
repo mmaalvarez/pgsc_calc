@@ -55,7 +55,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
 
     GRCh=38
     nextflow run mmaalvarez/pgsc_calc -r main -latest -resume \
-        -profile singularity[,slurm] \
+        -profile [singularity,conda][,slurm] \
         --singularity_bind_paths '/path/to/bind,/other/path/to/bind' \
         --input /path/to/input_table.csv \
         --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
