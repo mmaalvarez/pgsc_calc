@@ -1,6 +1,9 @@
 process URL_DOWNLOAD {
     tag "${sampleId}"
 
+    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    storeDir cachedir / "bam_to_gvcf" / "bam"
+    
     input:
     tuple val(sampleId), val(bam_url)
 
