@@ -42,7 +42,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow for the case when the input consists of BAM files (to be downloaded or already downloaded)
     │   └── gvcf_to_joint.nf                ← NEW orchestrating subworkflow for the case when the input consists of single-sample gVCF files
     ├── environments/pgscatalog_utils/
-    │   └── environment.yml                 ← MODIFIED (changed dependencies to pgscatalog-utils=2.0.0)
+    │   └── environment.yml                 ← MODIFIED (install with pip pgscatalog dependencies)
     ├── main.nf                             ← MODIFIED
     ├── nextflow.config                     ← MODIFIED (include new config)
     ├── MAKE                                ← MODIFIED
