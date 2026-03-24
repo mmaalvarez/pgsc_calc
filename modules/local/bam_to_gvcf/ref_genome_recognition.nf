@@ -1,6 +1,8 @@
 process REF_GENOME_RECOGNITION {
     tag "${sampleId}"
 
+    conda "bioconda::pysam=0.22.0"
+
     input:
     tuple val(sampleId), path(bamFile), path(baiFile)
     path(reference_dict)

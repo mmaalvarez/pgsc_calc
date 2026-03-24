@@ -1,6 +1,8 @@
 process JOINT_GENOTYPE {
     tag "joint_genotype_${chromosome}"
 
+    conda "bioconda::gatk4=4.5.0.0 bioconda::bcftools=1.17 bioconda::htslib=1.17"
+
     publishDir "${params.outdir}/bam_to_gvcf/joint_called/", mode: 'copy'
 
     input:

@@ -1,6 +1,8 @@
 process GDC_DOWNLOAD {
     tag "${gdc_id}"
     
+    conda "bioconda::gdc-client=1.6.1"
+
     cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
     storeDir cachedir / "bam_to_gvcf" / "bam"
 

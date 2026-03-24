@@ -1,6 +1,11 @@
 process REALIGN_BWA_MEM2 {
     tag "${sampleId}"
 
+    conda "bioconda::bwa-mem2=2.2.1 bioconda::samtools=1.17 bioconda::pysam=0.22.0"
+
+    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    storeDir cachedir / "bam_to_gvcf" / "bam_realigned"
+
     input:
     tuple val(sampleId), path(bam_file), path(bai_file)
     path(reference)

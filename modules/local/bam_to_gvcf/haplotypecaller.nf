@@ -1,6 +1,8 @@
 process HAPLOTYPECALLER {
     tag "${sampleId}-${chromosome}"
 
+    conda "bioconda::gatk4=4.5.0.0 bioconda::bcftools=1.17 bioconda::htslib=1.17"
+
     input:
     tuple val(sampleId), path(normal_bam), path(normal_bai),
           path(reference), path(reference_fai), path(reference_dict),

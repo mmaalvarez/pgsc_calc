@@ -1,6 +1,8 @@
 process COORDINATE_SORT {
     tag "${sampleId}"
 
+    conda "bioconda::samtools=1.17"
+
     input:
     tuple val(sampleId), path(in_bam), path(in_bai)
 
