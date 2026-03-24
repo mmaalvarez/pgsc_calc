@@ -1,6 +1,8 @@
 process FLAGSTAT {
     tag "${sampleId}"
 
+    conda "bioconda::sambamba=1.0"
+
     publishDir "${params.outdir}/bam_to_gvcf/bam_metrics/", mode: 'copy'
 
     input:

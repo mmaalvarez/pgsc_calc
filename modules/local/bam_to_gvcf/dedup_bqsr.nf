@@ -1,6 +1,8 @@
 process DEDUP_BQSR {
     tag "${sampleId}"
 
+    conda "bioconda::gatk4=4.5.0.0"
+
     cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
     storeDir cachedir / "bam_to_gvcf" / "dedup_bqsr"
 
