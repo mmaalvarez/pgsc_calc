@@ -61,6 +61,10 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
         --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
         --target_build GRCh"$GRCh" #\
 
+    - add these flags if you want to keep multiallelic and/or "ambiguous" (A/T or G/C) SNPs
+        --keep_multiallelic true
+        --keep_ambiguous true #\
+
 - If the input is the path to a multichromosome-singlesample-gVCF files table (TSV containing a column with the 'gvcfFile' header), add these flags
 	WARNING: the --target_build must match the build in these reference files, e.g. here I am using GRCh38:
 
