@@ -86,7 +86,6 @@ process JOINT_GENOTYPE {
     {
         if ($5 == "." || $5 == "*") {
             if ($8 ~ /DB_ALT=/) {
-                # Ordered iteration avoids gawk unordered-hash surprises
                 n = split($8, info, ";")
                 db_alt = ""
                 for (i = 1; i <= n; i++) {
@@ -96,16 +95,22 @@ process JOINT_GENOTYPE {
                         break
                     }
                 }
-                # && db_alt != $4 guard drops any site where the dbSNP ALT is identical to the REF — these are biologically meaningless entries in dbSNP
-                if (db_alt != "" && db_alt != "." && db_alt != $4) {
-                    $5 = db_alt
-                    print
+                if (db_alt != "" && db_alt != ".") {
+                    # Split on comma and drop any allele that matches REF
+                    n_alt = split(db_alt, alts, ",")
+                    new_alt = ""
+                    for (j = 1; j <= n_alt; j++) {
+                        if (alts[j] != $4 && alts[j] != "." && alts[j] != "") {
+                            new_alt = (new_alt == "") ? alts[j] : new_alt "," alts[j]
+                        }
+                    }
+                    if (new_alt != "") {
+                        $5 = new_alt
+                        print
+                    }
                 }
-                # else: DB_ALT tag present but empty/dot → still drop
             }
-            # else: no DB_ALT tag → hom-ref not in dbSNP → drop
         } else {
-            # Real ALT allele already called → keep unconditionally
             print
         }
     }' | bgzip -c > cohort_!{chromosome}.vcf.gz

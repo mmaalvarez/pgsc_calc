@@ -62,7 +62,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
         --target_build GRCh"$GRCh" #\
 
     - add these flags if you want to keep multiallelic and/or "ambiguous" (A/T or G/C) SNPs
-        --keep_multiallelic true
+        --keep_multiallelic true \
         --keep_ambiguous true #\
 
 - If the input is the path to a multichromosome-singlesample-gVCF files table (TSV containing a column with the 'gvcfFile' header), add these flags
