@@ -41,6 +41,8 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   └── input_check.nf                  ← MODIFIED (accept only autosomes, also the integration of bam_to_gvcf)    
     │   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow for the case when the input consists of BAM files (to be downloaded or already downloaded)
     │   └── gvcf_to_joint.nf                ← NEW orchestrating subworkflow for the case when the input consists of single-sample gVCF files
+    ├── environments/pgscatalog_utils/
+    │   └── environment.yml                 ← MODIFIED (changed pgscatalog.core=1.0.0 to >=0.3.0,<0.4.0)
     ├── main.nf                             ← MODIFIED
     ├── nextflow.config                     ← MODIFIED (include new config)
     ├── MAKE                                ← MODIFIED
@@ -55,7 +57,7 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
 
     GRCh=38
     nextflow run mmaalvarez/pgsc_calc -r main -latest -resume \
-        -profile singularity[,slurm] \
+        -profile [singularity,conda][,slurm] \
         --singularity_bind_paths '/path/to/bind,/other/path/to/bind' \
         --input /path/to/input_table.csv \
         --[pgs_id,scorefile] [PGS[0-9]{6},'path/to/scores/.txt'] \
