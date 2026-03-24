@@ -1,6 +1,9 @@
 process DEDUP_BQSR {
     tag "${sampleId}"
 
+    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    storeDir cachedir / "bam_to_gvcf" / "dedup_bqsr"
+
     input:
     tuple val(sampleId), path(coord_sorted_bam), path(coord_sorted_bai),
           path(reference), path(reference_fai), path(reference_dict),

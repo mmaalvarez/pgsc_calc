@@ -1,5 +1,8 @@
 process GDC_DOWNLOAD {
     tag "${gdc_id}"
+    
+    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    storeDir cachedir / "bam_to_gvcf" / "bam"
 
     input:
     val(gdc_id)
