@@ -3,7 +3,7 @@ process DEDUP_BQSR {
 
     conda "bioconda::gatk4=4.5.0.0"
 
-    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    def cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir  // *** CHANGED: added def ***
     storeDir cachedir / "bam_to_gvcf" / "dedup_bqsr"
 
     input:

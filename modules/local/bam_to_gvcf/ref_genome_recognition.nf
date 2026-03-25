@@ -8,25 +8,29 @@ process REF_GENOME_RECOGNITION {
     path(reference_dict)
 
     output:
-    tuple val(sampleId), env(needsRealign), path(bamFile), path(baiFile), emit: result
+    tuple val(sampleId), env(needsRealign), path("${sampleId}.bam"), path("${sampleId}.bam.bai"), emit: result
 
     shell:
     '''
     set -euo pipefail
 
-    # *** TEMPORARY DEBUG — remove once root cause is confirmed ***
-    echo "[reco debug] sampleId      = '!{sampleId}'"      >&2
-    echo "[reco debug] bamFile       = '!{bamFile}'"       >&2
-    echo "[reco debug] baiFile       = '!{baiFile}'"       >&2
-    echo "[reco debug] reference_dict= '!{reference_dict}'" >&2
-    echo "[reco debug] work dir contents:" >&2
-    ls -la >&2
-    # *** END TEMPORARY DEBUG ***
+    target_bam="!{sampleId}.bam"
+    target_bai="${target_bam}.bai"
 
-    # BUG FIX 1: separate assignment from export so set -e catches failures
-    needsRealign=$(detect_reference_genome.py -b '!{bamFile}' -d '!{reference_dict}')
+    # *** CHANGED: was missing BAM normalization entirely, and BAI normalization only
+    # handled the special case "sampleId.bai" while ignoring the staged !{baiFile}.
+    # Fix: create sampleId-based symlinks for both BAM and BAI whenever the staged
+    # filename differs from the expected target name. This covers every upstream
+    # source (LINK_LOCAL_BAM with its original filename, URL_DOWNLOAD, GDC_DOWNLOAD). ***
+
+    # Normalise BAM filename
+    [ -f "${target_bam}" ] || ln -sf "!{bamFile}" "${target_bam}"
+
+    # Normalise BAI filename (handles .bam.bai, .bai, or any other staged name)
+    [ -f "${target_bai}" ] || ln -sf "!{baiFile}" "${target_bai}"
+
+    # Assign before export so set -e can catch a non-zero exit from the script
+    needsRealign=$(detect_reference_genome.py -b "${target_bam}" -d '!{reference_dict}')
     export needsRealign
-
-    echo "[reco debug] needsRealign='${needsRealign}'" >&2
     '''
 }

@@ -3,7 +3,7 @@ process FILTER_DBSNP {
 
     conda "bioconda::bcftools=1.17 bioconda::htslib=1.17"
 
-    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    def cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir  // *** CHANGED: added def ***
     storeDir cachedir / "bam_to_gvcf" / "filtered_dbsnp"
 
     input:

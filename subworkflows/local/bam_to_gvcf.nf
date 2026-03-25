@@ -1,6 +1,6 @@
 include { LINK_LOCAL_BAM          } from '../../modules/local/bam_to_gvcf/link_local_bam'
 include { GDC_DOWNLOAD            } from '../../modules/local/bam_to_gvcf/gdc_download'
-include { URL_DOWNLOAD            } from '../../modules/local/bam_to_gvcf/url_download'          // *** NEW ***
+include { URL_DOWNLOAD            } from '../../modules/local/bam_to_gvcf/url_download'
 include { REF_GENOME_RECOGNITION  } from '../../modules/local/bam_to_gvcf/ref_genome_recognition'
 include { REALIGN_BWA_MEM2        } from '../../modules/local/bam_to_gvcf/realign_bwa_mem2'
 include { COORDINATE_SORT         } from '../../modules/local/bam_to_gvcf/coordinate_sort'
@@ -17,7 +17,7 @@ include { GENERATE_SAMPLESHEET    } from '../../modules/local/bam_to_gvcf/genera
 workflow BAM_TO_GVCF {
 
     take:
-    ch_sample_table   // channel: path to TSV with bamFile column
+    ch_sample_table   // channel: path to TSV with sampleId (optional) and bamFile columns
 
     main:
 
@@ -46,28 +46,35 @@ workflow BAM_TO_GVCF {
     ch_calling_regions = Channel.value(file(params.bam2gvcf_calling_regions, checkIfExists: true))
     ch_contig_map      = Channel.value(file(params.bam2gvcf_contig_map, checkIfExists: true))
 
-    // ---- Parse sample table -----------------------------------------------
+    // ---- Parse sample table -----------------------------------------------  // *** CHANGED ***
+    // Now emits (sampleId, bamFile) tuples.
+    // 'sampleId' is read from the TSV 'sampleId' column when present;
+    // falls back to the filename portion of bamFile (minus .bam extension).
     ch_all_ids = ch_sample_table
         .splitCsv(header: true, sep: '\t')
         .map { row ->
             if (!row.bamFile) error "Missing 'bamFile' column in row: ${row}"
-            row.bamFile as String
+            def bamFile  = row.bamFile as String
+            def sampleId = row.sampleId                                          // null if column absent
+                ?: bamFile.tokenize('/').last().replaceAll(/\.bam$/, '')         // filename fallback
+            tuple(sampleId, bamFile)
         }
 
     // ---- Branch: URL vs local BAM path vs remote GDC ID -------------------  // *** CHANGED ***
-    //  Check for URLs first so that file(it).exists() is never called on an
+    //  The closure now destructures the (sampleId, bamFile) tuple.
+    //  Check for URLs first so that file(bamFile).exists() is never called on an
     //  HTTP/FTP address (Nextflow's file() *can* resolve remote URIs, which
     //  would short-circuit into the local branch).
-    ch_all_ids.branch {
-        url:    it.startsWith('http://') || it.startsWith('https://') || it.startsWith('ftp://')   // *** NEW ***
-        local:  file(it).exists()
-        remote: true                                                                                // GDC UUIDs
+    ch_all_ids.branch { sampleId, bamFile ->
+        url:    bamFile.startsWith('http://') || bamFile.startsWith('https://') || bamFile.startsWith('ftp://')
+        local:  file(bamFile).exists()
+        remote: true                                                             // GDC UUIDs
     }.set { sample_branch }
 
-    // -- Local BAMs — resolve BAI companion ---------------------------------
-    ch_local_input = sample_branch.local.map { bam_path ->
+    // -- Local BAMs — resolve BAI companion ---------------------------------  // *** CHANGED ***
+    ch_local_input = sample_branch.local.map { sampleId, bam_path ->
+        // sampleId now comes from the TSV, not derived from the filename
         def bam = file(bam_path)
-        def sampleId = bam.baseName
         def bai = file("${bam}.bai").exists()
                 ? file("${bam}.bai")
                 : ( file(bam_path.replaceAll(/\.bam$/, '.bai')).exists()
@@ -79,21 +86,18 @@ workflow BAM_TO_GVCF {
 
     LINK_LOCAL_BAM(ch_local_input)
 
-    // -- URL BAMs — derive sampleId from the filename in the URL ------------  // *** NEW ***
-    ch_url_input = sample_branch.url.map { bam_url ->
-        def filename = bam_url.tokenize('/').last()                  // e.g. HG00096.mapped.ILLUMINA.bwa.GBR.low_coverage.20120522.bam
-        def sampleId = filename.replaceAll(/\.bam$/, '')
-        tuple(sampleId, bam_url)
-    }
-
-    URL_DOWNLOAD(ch_url_input)                                                                      // *** NEW ***
+    // -- URL BAMs — sampleId comes from the TSV (or filename fallback) ------  // *** CHANGED ***
+    // sample_branch.url is already a (sampleId, bam_url) tuple — pass directly.
+    // The old ch_url_input mapping that re-derived sampleId from the filename is removed.
+    URL_DOWNLOAD(sample_branch.url)
 
     // -- GDC BAMs -----------------------------------------------------------
+    // NOTE: GDC_DOWNLOAD must also be updated to accept a (sampleId, uuid) tuple
     GDC_DOWNLOAD(sample_branch.remote)
 
-    // ---- Unify all three sources ------------------------------------------  // *** CHANGED ***
+    // ---- Unify all three sources ------------------------------------------
     ch_downloaded = LINK_LOCAL_BAM.out.bam
-        .mix(URL_DOWNLOAD.out.bam)                                                                  // *** NEW ***
+        .mix(URL_DOWNLOAD.out.bam)
         .mix(GDC_DOWNLOAD.out.bam)
 
     // ---- Reference genome recognition -------------------------------------
