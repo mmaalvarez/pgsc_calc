@@ -3,14 +3,14 @@ process URL_DOWNLOAD {
 
     conda "conda-forge::wget bioconda::samtools=1.17 bioconda::htslib=1.17"
 
-    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    def cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir / "genotypes_cache"
     storeDir cachedir / "bam_to_gvcf" / "bam"
-    
+
     input:
     tuple val(sampleId), val(bam_url)
 
     output:
-    tuple val(sampleId), path("*.bam"), path("*.bai"), emit: bam
+    tuple val(sampleId), path("${sampleId}.bam"), path("${sampleId}.bam.bai"), emit: bam
 
     shell:
     '''
@@ -25,11 +25,17 @@ process URL_DOWNLOAD {
 
     if wget -q --tries=3 --timeout=60 -O "!{sampleId}.bam.bai" "${BAI_URL_1}" 2>/dev/null; then
         echo "INFO  Downloaded index from ${BAI_URL_1}"
-    elif wget -q --tries=3 --timeout=60 -O "!{sampleId}.bam.bai" "${BAI_URL_2}" 2>/dev/null; then
+    elif wget -q --tries=3 --timeout=60 -O "!{sampleId}.bai" "${BAI_URL_2}" 2>/dev/null; then
         echo "INFO  Downloaded index from ${BAI_URL_2}"
     else
         echo "WARN  No remote BAI found — generating index with samtools"
         samtools index -@ !{task.cpus} "!{sampleId}.bam"
+    fi
+
+    # Normalize: rename .bai → .bam.bai if that is what was produced above
+    # (covers the BAI_URL_2 branch and any future shell path that writes .bai)
+    if [ -f "!{sampleId}.bai" ] && [ ! -f "!{sampleId}.bam.bai" ]; then
+        mv "!{sampleId}.bai" "!{sampleId}.bam.bai"
     fi
     '''
 }

@@ -3,7 +3,7 @@ process REALIGN_BWA_MEM2 {
 
     conda "bioconda::bwa-mem2=2.2.1 bioconda::samtools=1.17 bioconda::pysam=0.22.0"
 
-    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    def cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir  // *** CHANGED: added def ***
     storeDir cachedir / "bam_to_gvcf" / "bam_realigned"
 
     input:

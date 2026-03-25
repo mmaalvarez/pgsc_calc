@@ -3,9 +3,9 @@ process PREPARE_COHORT_REF {
 
     conda "bioconda::gatk4=4.5.0.0 bioconda::samtools=1.17 bioconda::pysam=0.22.0"
 
-    cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
+    def cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir  // *** CHANGED: added def ***
     storeDir cachedir / "bam_to_gvcf" / "cohort_ref"
-    
+
     input:
     tuple val(sampleId), path(one_bam), path(one_bai)
     path(base_reference)
