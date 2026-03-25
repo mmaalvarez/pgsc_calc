@@ -9,7 +9,7 @@ dependencies:
   - r-tidyr
   - r-purrr
   - r-ggplot2
-  - r-DT
+  - r-dt
   - r-tibble
   - r-forcats
   - r-readr
