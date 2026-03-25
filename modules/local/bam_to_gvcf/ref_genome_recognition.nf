@@ -8,11 +8,11 @@ process REF_GENOME_RECOGNITION {
     path(reference_dict)
 
     output:
-    tuple val(sampleId), env(isGRCh38), path(bamFile), path(baiFile), emit: result
+    tuple val(sampleId), env(needsRealign), path(bamFile), path(baiFile), emit: result
 
     shell:
     '''
     set -euo pipefail
-    export isGRCh38=$(detect_reference_genome.py -b !{bamFile} -d !{reference_dict})
+    export needsRealign=$(detect_reference_genome.py -b !{bamFile} -d !{reference_dict})
     '''
 }
