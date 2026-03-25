@@ -38,11 +38,14 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     ├── workflows/
     │   └── pgsc_calc.nf                    ← MODIFIED
     ├── subworkflows/local/
-    │   └── input_check.nf                  ← MODIFIED (accept only autosomes, also the integration of bam_to_gvcf)    
-    │   └── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow for the case when the input consists of BAM files (to be downloaded or already downloaded)
+    │   ├── input_check.nf                  ← MODIFIED (accept only autosomes, also the integration of bam_to_gvcf)    
+    │   ├── bam_to_gvcf.nf                  ← NEW orchestrating subworkflow for the case when the input consists of BAM files (to be downloaded or already downloaded)
     │   └── gvcf_to_joint.nf                ← NEW orchestrating subworkflow for the case when the input consists of single-sample gVCF files
-    ├── environments/pgscatalog_utils/
-    │   └── environment.yml                 ← MODIFIED
+    ├── environments/
+    │       ├── pgscatalog_utils/
+    │       │   └── environment.yml         ← MODIFIED
+    │       └── report/
+    │           └── environment.yml         ← MODIFIED
     ├── main.nf                             ← MODIFIED
     ├── nextflow.config                     ← MODIFIED (include new config)
     ├── MAKE                                ← MODIFIED
