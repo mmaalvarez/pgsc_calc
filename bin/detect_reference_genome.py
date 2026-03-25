@@ -318,12 +318,17 @@ def compareSequencesDict(dict1: dict, dict2: dict, requiredSequences):
     for sequenceName in keys_in_both:
         valDict1 = dict1[sequenceName] if sequenceName in dict1 else dict1[name_equivalencies[sequenceName]]
         valDict2 = dict2[sequenceName] if sequenceName in dict2 else dict2[name_equivalencies[sequenceName]]
-        if valDict1[1] is None or valDict2[1] is None:
+        
+        # Compare lengths only for required sequences, ignore M5
+        if sequenceName in requiredSequences:
+            valDict1 = (valDict1[0], None)
+            valDict2 = (valDict2[0], None)
+        elif valDict1[1] is None or valDict2[1] is None:
             valDict1 = (valDict1[0], None)
             valDict2 = (valDict2[0], None)
 
         if valDict1 != valDict2 and sequenceName in requiredSequences:
-            eprint("incorrect required sequence: ",sequenceName)
+            eprint("incorrect required sequence: ", sequenceName)
             return 1
     return 0
 

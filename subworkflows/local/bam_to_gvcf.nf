@@ -100,12 +100,12 @@ workflow BAM_TO_GVCF {
     REF_GENOME_RECOGNITION(ch_downloaded, ch_ref_dict)
 
     REF_GENOME_RECOGNITION.out.result.branch {
-        to_realign: it[1] != '0'
-        keep:       true
+        to_realign: it[1] != '0'   // needsRealign == 1 → ('yes'): mismatch found
+        keep:       true           // needsRealign == 0 → ('no'): already matches reference
     }.set { branched_bams }
 
-    ch_to_realign = branched_bams.to_realign.map { sid, flag, bam, bai -> tuple(sid, bam, bai) }
-    ch_keep       = branched_bams.keep.map       { sid, flag, bam, bai -> tuple(sid, bam, bai) }
+    ch_to_realign = branched_bams.to_realign.map { sid, needsRealign, bam, bai -> tuple(sid, bam, bai) }
+    ch_keep       = branched_bams.keep.map       { sid, needsRealign, bam, bai -> tuple(sid, bam, bai) }
 
     // ---- Realignment ------------------------------------------------------
     REALIGN_BWA_MEM2(
