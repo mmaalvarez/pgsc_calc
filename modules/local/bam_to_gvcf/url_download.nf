@@ -3,7 +3,7 @@ process URL_DOWNLOAD {
 
     conda "conda-forge::wget bioconda::samtools=1.17 bioconda::htslib=1.17"
 
-    def cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir / "genotypes_cache"
+    def cachedir = params.genotypes_cache ? file(params.genotypes_cache) : workDir
     storeDir cachedir / "bam_to_gvcf" / "bam"
 
     input:
