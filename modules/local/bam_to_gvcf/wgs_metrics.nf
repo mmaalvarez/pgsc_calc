@@ -1,7 +1,7 @@
 process WGS_METRICS {
     tag "${sampleId}"
 
-    conda "bioconda::gatk4=4.5.0.0"   // *** CHANGED: was bioconda::gridss=2.11.1 ***
+    conda "bioconda::gridss=2.11.1"
 
     publishDir "${params.outdir}/bam_to_gvcf/bam_metrics/", mode: 'copy'
 
