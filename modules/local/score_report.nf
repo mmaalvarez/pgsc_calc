@@ -17,16 +17,21 @@ process SCORE_REPORT {
         def clean = task.attempt > 1 ?
             "CONDA_PKGS_DIRS=\$(cd ../.. && pwd)/conda/pkgs conda clean --all -y && " : ""
         clean + """
-        _WD=\$(cd ../.. && pwd)
-        while IFS= read -r _ENV; do
-            [ -x "\$_ENV/bin/Rscript" ] || continue
-            mkdir -p "\$_ENV/etc/conda/activate.d"
-            printf 'unset R_HOME\\nunset R_LIBS_USER\\n' \
-                > "\$_ENV/etc/conda/activate.d/unset_r_home.sh"
-        done < <(find "\$_WD" -path "*/conda/env-*" -maxdepth 10 -type d 2>/dev/null | sort -u)
-        unset R_HOME R_LIBS R_LIBS_USER
+        # Derive the active conda env root from the activated Rscript binary
+        _CP=\$(dirname \$(dirname \$(which Rscript)))
+        # Positively set R_HOME and all library paths to the conda env — no unsetting, no guessing
+        export R_HOME=\$_CP/lib/R
+        export R_LIBS=\$_CP/lib/R/library
+        export R_LIBS_SITE=\$_CP/lib/R/library
+        unset R_LIBS_USER
+        # Suppress ~/.Renviron and ~/.Rprofile so they can't re-inject a bad R_LIBS_USER
         export R_ENVIRON_USER=/dev/null
         export R_PROFILE_USER=/dev/null
+        # Tell Quarto explicitly which R binary to use
+        export QUARTO_R=\$(which R)
+        # Debug: will appear in .command.err so you can confirm the paths
+        echo "DEBUG R_HOME=\$R_HOME QUARTO_R=\$QUARTO_R" >&2
+        Rscript --no-environ --no-site-file --no-init-file -e ".libPaths()" >&2
         """
     }
     
