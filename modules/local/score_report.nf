@@ -1,5 +1,5 @@
 process SCORE_REPORT {
-    // first elemenet of tag must be sampleset
+    // first element of tag must be sampleset
     tag "$meta.id" 
 
     label 'process_high_memory'
@@ -11,6 +11,8 @@ process SCORE_REPORT {
         !task.ext.singularity_pull_docker_container ?
         "${task.ext.singularity}${task.ext.singularity_version}" :
         "${task.ext.docker}${task.ext.docker_version}" }"
+
+    beforeScript = 'unset R_HOME'
 
     input:
     tuple val(meta), path(scorefile), path(score_log), path(match_summary), path(ancestry)
