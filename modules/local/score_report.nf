@@ -13,9 +13,19 @@ process SCORE_REPORT {
         "${task.ext.singularity}${task.ext.singularity_version}" :
         "${task.ext.docker}${task.ext.docker_version}" }"
 
-    beforeScript = { task.attempt > 1 ? 
-        "CONDA_PKGS_DIRS=$workDir/conda/pkgs conda clean --all -y && unset R_HOME && unset R_LIBS && unset R_LIBS_USER" : 
-        "unset R_HOME && unset R_LIBS && unset R_LIBS_USER" 
+    beforeScript = { 
+        def base = [
+            "unset R_HOME",
+            "unset R_LIBS",
+            "unset R_LIBS_USER",
+            "export R_ENVIRON_USER=/dev/null",   // stops R re-reading ~/.Renviron
+            "export R_PROFILE_USER=/dev/null",   // stops R re-reading ~/.Rprofile
+            'export QUARTO_R=$(which R)'          // forces Quarto to use the conda env R
+        ].join(" && ")
+        
+        task.attempt > 1 ? 
+            "CONDA_PKGS_DIRS=${workDir}/conda/pkgs conda clean --all -y && ${base}" : 
+            base
     }
     
     input:
