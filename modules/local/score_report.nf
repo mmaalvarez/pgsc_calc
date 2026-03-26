@@ -3,6 +3,7 @@ process SCORE_REPORT {
     tag "$meta.id" 
 
     label 'process_high_memory'
+    label 'error_retry'
     label 'report'
 
     conda "${task.ext.conda}"
@@ -12,7 +13,7 @@ process SCORE_REPORT {
         "${task.ext.singularity}${task.ext.singularity_version}" :
         "${task.ext.docker}${task.ext.docker_version}" }"
 
-    beforeScript = 'unset R_HOME'
+    beforeScript = { task.attempt > 1 ? "CONDA_PKGS_DIRS=$workDir/conda/pkgs conda clean --all -y && unset R_HOME" : "unset R_HOME" }
 
     input:
     tuple val(meta), path(scorefile), path(score_log), path(match_summary), path(ancestry)
