@@ -13,19 +13,21 @@ process SCORE_REPORT {
         "${task.ext.singularity}${task.ext.singularity_version}" :
         "${task.ext.docker}${task.ext.docker_version}" }"
 
-    beforeScript = { 
-        def base = [
-            "unset R_HOME",
-            "unset R_LIBS",
-            "unset R_LIBS_USER",
-            "export R_ENVIRON_USER=/dev/null",   // stops R re-reading ~/.Renviron
-            "export R_PROFILE_USER=/dev/null",   // stops R re-reading ~/.Rprofile
-            'export QUARTO_R=$(which R)'          // forces Quarto to use the conda env R
-        ].join(" && ")
-        
-        task.attempt > 1 ? 
-            "CONDA_PKGS_DIRS=${workDir}/conda/pkgs conda clean --all -y && ${base}" : 
-            base
+    beforeScript = {
+        def clean = task.attempt > 1 ?
+            "CONDA_PKGS_DIRS=\$(cd ../.. && pwd)/conda/pkgs conda clean --all -y && " : ""
+        clean + """
+        _WD=\$(cd ../.. && pwd)
+        while IFS= read -r _ENV; do
+            [ -x "\$_ENV/bin/Rscript" ] || continue
+            mkdir -p "\$_ENV/etc/conda/activate.d"
+            printf 'unset R_HOME\\nunset R_LIBS_USER\\n' \
+                > "\$_ENV/etc/conda/activate.d/unset_r_home.sh"
+        done < <(find "\$_WD" -path "*/conda/env-*" -maxdepth 10 -type d 2>/dev/null | sort -u)
+        unset R_HOME R_LIBS R_LIBS_USER
+        export R_ENVIRON_USER=/dev/null
+        export R_PROFILE_USER=/dev/null
+        """
     }
     
     input:
