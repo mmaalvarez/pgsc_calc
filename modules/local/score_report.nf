@@ -13,27 +13,7 @@ process SCORE_REPORT {
         "${task.ext.singularity}${task.ext.singularity_version}" :
         "${task.ext.docker}${task.ext.docker_version}" }"
 
-    beforeScript = {
-        def clean = task.attempt > 1 ?
-            "CONDA_PKGS_DIRS=\$(cd ../.. && pwd)/conda/pkgs conda clean --all -y && " : ""
-        clean + """
-        # Derive the active conda env root from the activated Rscript binary
-        _CP=\$(dirname \$(dirname \$(which Rscript)))
-        # Positively set R_HOME and all library paths to the conda env — no unsetting, no guessing
-        export R_HOME=\$_CP/lib/R
-        export R_LIBS=\$_CP/lib/R/library
-        export R_LIBS_SITE=\$_CP/lib/R/library
-        unset R_LIBS_USER
-        # Suppress ~/.Renviron and ~/.Rprofile so they can't re-inject a bad R_LIBS_USER
-        export R_ENVIRON_USER=/dev/null
-        export R_PROFILE_USER=/dev/null
-        # Tell Quarto explicitly which R binary to use
-        export QUARTO_R=\$(which R)
-        # Debug: will appear in .command.err so you can confirm the paths
-        echo "DEBUG R_HOME=\$R_HOME QUARTO_R=\$QUARTO_R" >&2
-        Rscript --no-environ --no-site-file --no-init-file -e ".libPaths()" >&2
-        """
-    }
+    beforeScript = { task.attempt > 1 ? "CONDA_PKGS_DIRS=$workDir/conda/pkgs conda clean --all -y" : "unset R_HOME; Rscript -e \"if (!requireNamespace('DT', quietly=TRUE)) install.packages('DT', repos='https://cran.r-project.org')\"" }
     
     input:
     tuple val(meta), path(scorefile), path(score_log), path(match_summary), path(ancestry)
