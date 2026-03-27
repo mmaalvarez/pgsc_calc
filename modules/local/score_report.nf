@@ -13,7 +13,7 @@ process SCORE_REPORT {
         "${task.ext.singularity}${task.ext.singularity_version}" :
         "${task.ext.docker}${task.ext.docker_version}" }"
 
-    beforeScript = { task.attempt > 1 ? "CONDA_PKGS_DIRS=$workDir/conda/pkgs conda clean --all -y" : "unset R_HOME; Rscript -e \"if (!requireNamespace('DT', quietly=TRUE)) install.packages('DT', repos='https://cran.r-project.org')\"" }
+    beforeScript = { task.attempt > 1 ? "CONDA_PKGS_DIRS=$workDir/conda/pkgs conda clean --all -y" : "unset R_HOME" }
     
     input:
     tuple val(meta), path(scorefile), path(score_log), path(match_summary), path(ancestry)
