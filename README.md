@@ -21,20 +21,6 @@ miguel.m.alvarez3[--at--]gmail[--dot--]com
     │   ├── plink2_relabelbim.nf            ← MODIFIED to accept only autosomes
     │   ├── plink2_relabelpvar.nf           ← MODIFIED to accept only autosomes
     │   └── bam_to_gvcf/                    ← NEW
-    │       ├── link_local_bam.nf           ← NEW
-    │       ├── gdc_download.nf             ← NEW
-    │       ├── ref_genome_recognition.nf   ← NEW
-    │       ├── realign_bwa_mem2.nf         ← NEW
-    │       ├── coordinate_sort.nf          ← NEW
-    │       ├── prepare_cohort_reference.nf ← NEW
-    │       ├── filter_dbsnp.nf             ← NEW
-    │       ├── dedup_bqsr.nf               ← NEW
-    │       ├── wgs_metrics.nf              ← NEW
-    │       ├── flagstat.nf                 ← NEW
-    │       ├── split_calling_regions.nf    ← NEW
-    │       ├── haplotypecaller.nf          ← NEW
-    │       ├── joint_genotype.nf           ← NEW
-    │       └── generate_samplesheet.nf     ← NEW
     ├── workflows/
     │   └── pgsc_calc.nf                    ← MODIFIED
     ├── subworkflows/local/
