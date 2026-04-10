@@ -219,7 +219,7 @@ workflow BAM_TO_GVCF {
     SCATTER_INTERVALS(
         ch_valid_regions,                                          // (chrom, bed)
         ch_ref_fasta, ch_ref_fai, ch_ref_dict,
-        Channel.value(params.bam2gvcf_hc_scatter_count ?: 6)
+        Channel.value(params.bam2gvcf_hc_scatter_count)
     )
 
     // Flatten: (chrom, [files]) → (chrom, scatter_idx, file)
