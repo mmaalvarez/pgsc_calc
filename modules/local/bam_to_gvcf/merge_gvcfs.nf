@@ -23,7 +23,5 @@ process MERGE_GVCFS {
     gatk MergeVcfs \
       ${input_args} \
       -O !{sampleId}.!{chrom}.g.vcf.gz
-
-    tabix -p vcf !{sampleId}.!{chrom}.g.vcf.gz
     '''
 }
