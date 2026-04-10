@@ -6,11 +6,17 @@ include { REALIGN_BWA_MEM2        } from '../../modules/local/bam_to_gvcf/realig
 include { COORDINATE_SORT         } from '../../modules/local/bam_to_gvcf/coordinate_sort'
 include { PREPARE_COHORT_REF      } from '../../modules/local/bam_to_gvcf/prepare_cohort_reference'
 include { FILTER_DBSNP            } from '../../modules/local/bam_to_gvcf/filter_dbsnp'
-include { DEDUP_BQSR              } from '../../modules/local/bam_to_gvcf/dedup_bqsr'
+include { MARK_DUPLICATES         } from '../../modules/local/bam_to_gvcf/mark_duplicates'
+include { BASE_RECALIBRATOR       } from '../../modules/local/bam_to_gvcf/base_recalibrator'
+include { GATHER_BQSR_REPORTS     } from '../../modules/local/bam_to_gvcf/gather_bqsr_reports'
+include { APPLY_BQSR              } from '../../modules/local/bam_to_gvcf/apply_bqsr'
+include { GATHER_BAM_FILES        } from '../../modules/local/bam_to_gvcf/gather_bam_files'
 include { WGS_METRICS             } from '../../modules/local/bam_to_gvcf/wgs_metrics'
 include { FLAGSTAT                } from '../../modules/local/bam_to_gvcf/flagstat'
 include { SPLIT_CALLING_REGIONS   } from '../../modules/local/bam_to_gvcf/split_calling_regions'
+include { SCATTER_INTERVALS       } from '../../modules/local/bam_to_gvcf/scatter_intervals'
 include { HAPLOTYPECALLER         } from '../../modules/local/bam_to_gvcf/haplotypecaller'
+include { MERGE_GVCFS             } from '../../modules/local/bam_to_gvcf/merge_gvcfs'
 include { JOINT_GENOTYPE          } from '../../modules/local/bam_to_gvcf/joint_genotype'
 include { GENERATE_SAMPLESHEET    } from '../../modules/local/bam_to_gvcf/generate_samplesheet'
 
@@ -133,26 +139,73 @@ workflow BAM_TO_GVCF {
     // ---- Filter dbSNP for cohort ------------------------------------------
     FILTER_DBSNP(PREPARE_COHORT_REF.out.reference, ch_dbsnp, ch_dbsnp_tbi)
 
-    // ---- Dedup + BQSR -----------------------------------------------------
-    ch_dedup_input = COORDINATE_SORT.out.bam
-        .combine(PREPARE_COHORT_REF.out.reference)
-        .combine(FILTER_DBSNP.out.dbsnp)
-        .map { sid, bam, bai, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi ->
-            tuple(sid, bam, bai, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi)
+
+    // ====================================================================
+    //  Dedup + BQSR
+    // ====================================================================
+
+    // Step 1: MarkDuplicates — whole genome, per sample (cannot scatter)
+    MARK_DUPLICATES(COORDINATE_SORT.out.bam)
+
+    // Step 2: BaseRecalibrator — scattered across 22 autosomes per sample
+    ch_bqsr_scatter = MARK_DUPLICATES.out.bam                     // (sid, bam, bai)
+        .combine(PREPARE_COHORT_REF.out.reference)                // + (ref, fai, dict)
+        .combine(FILTER_DBSNP.out.dbsnp)                          // + (dbsnp, tbi)
+        .combine(Channel.of(*CHROMS))                              // × 22 chroms
+        .map { sid, bam, bai, ref, ref_fai, ref_dict,
+               dbsnp, dbsnp_tbi, chrom ->
+            tuple(sid, bam, bai, ref, ref_fai, ref_dict,
+                  dbsnp, dbsnp_tbi, chrom)
         }
 
-    DEDUP_BQSR(ch_dedup_input)
+    BASE_RECALIBRATOR(ch_bqsr_scatter)
+
+    // Step 3: Gather per-chromosome recalibration tables → one table per sample
+    BASE_RECALIBRATOR.out.table
+        .groupTuple(by: 0)                                        // (sid, [tables])
+        .set { ch_grouped_tables }
+
+    GATHER_BQSR_REPORTS(ch_grouped_tables)
+
+    // Step 4: ApplyBQSR — scattered across 22 autosomes per sample
+    ch_apply_scatter = MARK_DUPLICATES.out.bam
+        .join(GATHER_BQSR_REPORTS.out.table)                      // (sid, bam, bai, recal)
+        .combine(PREPARE_COHORT_REF.out.reference)                // + (ref, fai, dict)
+        .combine(Channel.of(*CHROMS))                              // × 22 chroms
+        .map { sid, bam, bai, recal_table,
+               ref, ref_fai, ref_dict, chrom ->
+            tuple(sid, bam, bai, ref, ref_fai, ref_dict,
+                  recal_table, chrom)
+        }
+
+    APPLY_BQSR(ch_apply_scatter)
+
+    // Step 5: Gather per-chromosome BAMs → one final BAM per sample
+    APPLY_BQSR.out.bam                                            // (sid, chrom, bam, bai)
+        .groupTuple(by: 0)                                        // (sid, [chroms], [bams], [bais])
+        .map { sid, chroms, bams, bais -> tuple(sid, bams, bais) }
+        .set { ch_gather_bams }
+
+    GATHER_BAM_FILES(ch_gather_bams)
+
+    // ====================================================================
+
 
     // ---- Optional QC metrics ----------------------------------------------
     if (params.bam2gvcf_run_metrics != false) {
-        ch_metrics_input = DEDUP_BQSR.out.bam
+        ch_metrics_input = GATHER_BAM_FILES.out.bam
             .combine(PREPARE_COHORT_REF.out.reference)
             .map { sid, bam, bai, ref, ref_fai, ref_dict ->
                 tuple(sid, bam, bai, ref, ref_fai, ref_dict)
             }
         WGS_METRICS(ch_metrics_input)
-        FLAGSTAT(DEDUP_BQSR.out.bam)
+        FLAGSTAT(GATHER_BAM_FILES.out.bam)
     }
+
+
+    // ====================================================================
+    //  HaplotypeCaller  (sub-chromosome scatter-gather)
+    // ====================================================================
 
     // ---- Split calling regions by chromosome ------------------------------
     ch_chromosomes = Channel.of(*CHROMS)
@@ -162,28 +215,61 @@ workflow BAM_TO_GVCF {
         .filter { chr, bed -> bed.size() > 0 }
         .ifEmpty { error "No valid calling regions for any chromosome" }
 
-    // ---- HaplotypeCaller per sample × chromosome --------------------------
-    ch_hc_base = DEDUP_BQSR.out.bam
-        .combine(PREPARE_COHORT_REF.out.reference)
-        .combine(FILTER_DBSNP.out.dbsnp)
-        .map { sid, bam, bai, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi ->
-            tuple(sid, bam, bai, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi)
+    // Split each per-chromosome BED into balanced sub-intervals
+    SCATTER_INTERVALS(
+        ch_valid_regions,                                          // (chrom, bed)
+        ch_ref_fasta, ch_ref_fai, ch_ref_dict,
+        Channel.value(params.bam2gvcf_hc_scatter_count ?: 6)
+    )
+
+    // Flatten: (chrom, [files]) → (chrom, scatter_idx, file)
+    ch_scattered = SCATTER_INTERVALS.out.intervals
+        .flatMap { chrom, intervals ->
+            def files = intervals instanceof List ? intervals : [intervals]
+            files.sort { a, b -> a.name <=> b.name }
+                 .withIndex()
+                 .collect { f, idx -> tuple(chrom, idx, f) }
         }
 
-    ch_hc_jobs = ch_hc_base.combine(ch_valid_regions)
-        .map { sid, bam, bai, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi, chrom, bed ->
-            tuple(sid, bam, bai, ref, ref_fai, ref_dict, dbsnp, dbsnp_tbi, chrom, bed)
+    // Build per-sample base channel (now from GATHER_BAM_FILES)
+    ch_hc_base = GATHER_BAM_FILES.out.bam
+        .combine(PREPARE_COHORT_REF.out.reference)
+        .combine(FILTER_DBSNP.out.dbsnp)
+        .map { sid, bam, bai, ref, ref_fai, ref_dict,
+               dbsnp, dbsnp_tbi ->
+            tuple(sid, bam, bai, ref, ref_fai, ref_dict,
+                  dbsnp, dbsnp_tbi)
+        }
+
+    // Cartesian: sample × (chrom, scatter_idx, interval)
+    ch_hc_jobs = ch_hc_base.combine(ch_scattered)
+        .map { sid, bam, bai, ref, ref_fai, ref_dict,
+               dbsnp, dbsnp_tbi, chrom, scatter_idx, interval ->
+            tuple(sid, bam, bai, ref, ref_fai, ref_dict,
+                  dbsnp, dbsnp_tbi, chrom, scatter_idx, interval)
         }
 
     HAPLOTYPECALLER(ch_hc_jobs)
 
-    // ---- Group HaplotypeCaller output BY CHROMOSOME (across all samples) --
-    HAPLOTYPECALLER.out.gvcf
+    // Merge sub-interval gVCFs back to per-sample × per-chromosome
+    HAPLOTYPECALLER.out.gvcf                                       // (sid, chrom, idx, gvcf, tbi)
+        .map { sid, chrom, scatter_idx, gvcf, tbi ->
+            tuple(sid, chrom, gvcf, tbi)
+        }
+        .groupTuple(by: [0, 1])                                   // (sid, chrom, [gvcfs], [tbis])
+        .set { ch_merge_gvcfs }
+
+    MERGE_GVCFS(ch_merge_gvcfs)
+
+    MERGE_GVCFS.out.gvcf
         .map { sid, chrom, gvcf, tbi -> tuple(chrom, gvcf, tbi) }
         .groupTuple(by: 0)
         .set { ch_per_chrom }
 
-    // ---- Per-chromosome joint genotyping ----------------------------------
+    // ====================================================================
+    //  JOINT_GENOTYPE  (Per-chromosome joint genotyping)
+    // ====================================================================
+
     ch_per_chrom
         .combine(PREPARE_COHORT_REF.out.reference)
         .combine(FILTER_DBSNP.out.dbsnp)
@@ -199,6 +285,11 @@ workflow BAM_TO_GVCF {
         .map { chrom, vcf, tbi -> vcf }
         .collect()
         .set { ch_all_vcfs }
+
+
+    // ====================================================================
+    //  GENERATE_SAMPLESHEET
+    // ====================================================================
 
     GENERATE_SAMPLESHEET(ch_all_vcfs)
 

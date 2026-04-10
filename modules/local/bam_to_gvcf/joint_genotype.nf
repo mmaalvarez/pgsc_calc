@@ -30,17 +30,16 @@ process JOINT_GENOTYPE {
         -R !{ref_fasta} \
         ${variant_args} \
         -L !{chromosome} \
-        -O cohort_combined.g.vcf.gz \
-        --dbsnp !{dbsnp}
+        -O cohort_combined.g.vcf.gz
 
     ## ---- Step 2: GenotypeGVCFs (restricted to this chromosome) ----
     gatk --java-options "-Xmx!{Math.max((task.memory.toGiga() as int) - 4, 2)}G" GenotypeGVCFs \
         -R !{ref_fasta} \
         -V cohort_combined.g.vcf.gz \
-        -O cohort_raw_!{chromosome}.vcf.gz \
         -L !{chromosome} \
         --dbsnp !{dbsnp} \
-        --include-non-variant-sites true
+        --include-non-variant-sites true \
+        -O cohort_raw_!{chromosome}.vcf.gz
 
     ## ---- Step 3: Annotate with dbSNP and filter ----
         
